@@ -256,8 +256,7 @@ corto_int16 g_load(g_generator g, char* library) {
     g_reset(g);
 
     /* Load library from generator path */
-    char* package = NULL;
-    corto_asprintf(&package, "driver/gen/%s", library);
+    char* package = corto_asprintf("driver/gen/%s", library);
     char* lib = corto_locate(package, &g->library, CORTO_LOCATION_LIB);
     if (!lib) {
         corto_seterr("generator '%s' not found: %s", package, corto_lasterr()?corto_lasterr():"");
@@ -395,7 +394,6 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
 
     while (corto_iter_hasNext(&iter)) {
         corto_object p = corto_iter_next(&iter);
-        char* prefixFileStr;
         char* prefix;
         char* includePath =
             corto_locate(
@@ -406,7 +404,7 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
             goto error;
         }
 
-        corto_asprintf(&prefixFileStr, "%s/.prefix", includePath);
+        char *prefixFileStr = corto_asprintf("%s/.prefix", includePath);
         prefix = corto_fileLoad(prefixFileStr);
         if (prefix) {
             if (prefix[strlen(prefix) - 1] == '\n') {
@@ -481,8 +479,7 @@ corto_int16 g_leafDependencies(
         CORTO_LOCATION_LIBPATH
     );
 
-    char* packagesTxt;
-    corto_asprintf(&packagesTxt, "%s/.corto/packages.txt", packageDir);
+    char* packagesTxt = corto_asprintf("%s/.corto/packages.txt", packageDir);
 
     corto_ll deps = corto_loadGetDependencies(packagesTxt);
     if (deps) {
@@ -1340,10 +1337,9 @@ corto_object g_fileScopeGet(g_file file) {
 /* Write to file */
 int g_fileWrite(g_file file, char* fmt, ...) {
     va_list args;
-    corto_char *buffer = NULL;
 
     va_start(args, fmt);
-    corto_vasprintf(&buffer, fmt, args);
+    char *buffer = corto_vasprintf(fmt, args);
     va_end(args);
 
     /* Write indentation & string */
