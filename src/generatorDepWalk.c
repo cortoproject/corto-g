@@ -107,7 +107,7 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
                 corto_value out;
 
                 if (corto_value_memberExpr(&v, m->stateCondExpr, &out)) {
-                    corto_seterr("invalid stateCondExpr '%s' for member '%s'",
+                    corto_throw("invalid stateCondExpr '%s' for member '%s'",
                         m->stateCondExpr,
                         corto_fullpath(NULL, m));
                     goto error;
@@ -115,7 +115,7 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
 
                 if (corto_value_typeof(&out) != corto_type(corto_bool_o)) {
                     if (corto_value_cast(&out, corto_bool_o, &out)) {
-                        corto_seterr("stateCondExpr '%s' of member '%s' is not castable to a boolean",
+                        corto_throw("stateCondExpr '%s' of member '%s' is not castable to a boolean",
                             m->stateCondExpr,
                             corto_fullpath(NULL, m));
                         goto error;
@@ -198,7 +198,7 @@ int corto_genDepBuildAction(corto_object o, void* userData) {
 
     /* If object a builtin package, signal that a bootstrap is found, indicating
      * that dependencies should be disregarded. */
-    if (corto_isBuiltinPackage(o)) {
+    if (corto_isbuiltin(o)) {
         data->bootstrap = TRUE;
         result = 0;
     } else {

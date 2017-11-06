@@ -1,0 +1,11 @@
+{
+    "id": "corto/g",
+    "type": "package",
+    "value": {
+        "author": "Sander Mertens",
+        "description": "Code generator framework",
+        "version": "1.0.0",        
+        "use": ["corto"],
+        "managed": false
+    }
+}

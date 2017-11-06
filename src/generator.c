@@ -35,7 +35,7 @@ static int g_closeFile(void* o, void* ctx) {
 
 static void g_reset(g_generator g) {
     if (g->library) {
-        corto_dlClose(g->library);
+        corto_dl_close(g->library);
         g->library = NULL;
     }
 
@@ -259,20 +259,20 @@ corto_int16 g_load(g_generator g, char* library) {
     char* package = corto_asprintf("driver/gen/%s", library);
     char* lib = corto_locate(package, &g->library, CORTO_LOCATION_LIB);
     if (!lib) {
-        corto_seterr("generator '%s' not found: %s", package, corto_lasterr()?corto_lasterr():"");
+        corto_throw("generator '%s' not found", package);
         goto error;
     }
 
     corto_assert(g->library != NULL, "generator located but dl_out is NULL");
 
     /* Load actions */
-    g->start_action = (g_startAction)corto_dlProc(g->library, "corto_genMain");
+    g->start_action = (g_startAction)corto_dl_proc(g->library, "corto_genMain");
     if (!g->start_action) {
-        corto_seterr("g_load: %s: unresolved SYMBOL 'corto_genMain'", lib);
+        corto_throw("g_load: %s: unresolved SYMBOL 'corto_genMain'", lib);
         corto_dealloc(lib);
         goto error;
     }
-    g->id_action = (g_idAction)corto_dlProc(g->library, "corto_genId");
+    g->id_action = (g_idAction)corto_dl_proc(g->library, "corto_genId");
 
     /* Function is allowed to be absent. */
 
@@ -400,12 +400,12 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
                 corto_path(NULL, root_o, p, "/"), NULL, CORTO_LOCATION_INCLUDE);
 
         if (!includePath) {
-            corto_seterr("package '%s' not found", corto_path(NULL, root_o, p, "/"));
+            corto_throw("package '%s' not found", corto_path(NULL, root_o, p, "/"));
             goto error;
         }
 
         char *prefixFileStr = corto_asprintf("%s/.prefix", includePath);
-        prefix = corto_fileLoad(prefixFileStr);
+        prefix = corto_file_load(prefixFileStr);
         if (prefix) {
             if (prefix[strlen(prefix) - 1] == '\n') {
                 prefix[strlen(prefix) - 1] = '\0';
@@ -415,7 +415,7 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
             }
             corto_dealloc(prefix);
         } else {
-            corto_lasterr();
+            corto_catch();
         }
         corto_dealloc(prefixFileStr);
         corto_dealloc(includePath);
@@ -436,24 +436,20 @@ corto_int16 g_start(g_generator g) {
     /* Find include paths for packages, load prefix file into generator */
     if (g->imports) {
         if (g_loadPrefixes(g, g->imports)) {
-            if (!corto_lasterr())  {
-                corto_seterr("failed to load package prefixes");
-            }
+            corto_throw("failed to load package prefixes");
             goto error;
         }
     }
     if (g->importsNested) {
         if (g_loadPrefixes(g, g->importsNested)) {
-            if (!corto_lasterr())  {
-                corto_seterr("failed to load prefixes for nested packages");
-            }
+            corto_throw("failed to load prefixes for nested packages");
             goto error;
         }
     }
 
     corto_int16 ret = g->start_action(g);
-    if (ret && !corto_lasterr())  {
-        corto_seterr("generator failed: %s", corto_lasterr());
+    if (ret)  {
+        corto_throw("generator failed");
     }
 
     return ret;
@@ -712,7 +708,7 @@ static corto_bool g_isOverloaded(corto_function o) {
     corto_objectseq scope = corto_scopeClaim(corto_parentof(o));
     for (i = 0; i < scope.length; i ++) {
         if (corto_instanceof(corto_procedure_o, corto_typeof(scope.buffer[i]))) {
-            corto_assert(corto_overload(scope.buffer[i], corto_idof(o), &d) == 0, "overloading error discovered in generator: %s", corto_lasterr());
+            corto_assert(corto_overload(scope.buffer[i], corto_idof(o), &d) == 0, "overloading error discovered in generator");
             if (d > 0 || d == CORTO_OVERLOAD_NOMATCH_OVERLOAD) {
                 result = TRUE;
                 break;
@@ -751,7 +747,7 @@ static corto_char* g_oidTransform(g_generator g, corto_object o, corto_id _id, g
 
             count = corto_signatureParamCount(tmp);
             if (count == -1) {
-                corto_seterr("invalid signature '%s'", tmp);
+                corto_throw("invalid signature '%s'", tmp);
                 goto error;
             }
 
@@ -1005,7 +1001,7 @@ static char* g_filePath_intern(g_generator g, char* filename, corto_char* buffer
     }
 
     /* Ensure path exists */
-    if (corto_filePath(result, path)) {
+    if (corto_file_path(result, path)) {
         if (corto_mkdir(path)) {
             goto error;
         }
@@ -1021,14 +1017,14 @@ corto_int16 g_loadExisting(g_generator g, char* name, char* option, corto_ll *li
     char* code = NULL, *ptr = NULL;
     CORTO_UNUSED(g);
 
-    if (!corto_fileTest(name)) {
+    if (!corto_file_test(name)) {
 
         /* Check if there is a .old file that can be restored */
         corto_id oldName;
         sprintf(oldName, "%s.old", name);
-        if (corto_fileTest(oldName)) {
+        if (corto_file_test(oldName)) {
             if (corto_rename(oldName, name)) {
-                corto_warning("could not rename '%s' to '%s': %s", oldName, name, corto_lasterr());
+                corto_warning("could not rename '%s' to '%s'", oldName, name);
                 goto ok;
             }
         } else {
@@ -1036,7 +1032,7 @@ corto_int16 g_loadExisting(g_generator g, char* name, char* option, corto_ll *li
         }
     }
 
-    code = corto_fileLoad(name);
+    code = corto_file_load(name);
     if (code) {
         ptr = code;
 
@@ -1056,7 +1052,7 @@ corto_int16 g_loadExisting(g_generator g, char* name, char* option, corto_ll *li
                     *endptr = '\0';
 
                     if (strlen(ptr) >= sizeof(corto_id)) {
-                        corto_seterr(
+                        corto_throw(
                             "%s: identifier of code-snippet exceeds %d characters", sizeof(corto_id));
                         goto error;
                     }
@@ -1078,7 +1074,7 @@ corto_int16 g_loadExisting(g_generator g, char* name, char* option, corto_ll *li
                         }
 
                         if(strstr(src, "$begin")) {
-                            corto_seterr("%s: code-snippet '%s(%s)' contains nested $begin (did you forget an $end?)",
+                            corto_throw("%s: code-snippet '%s(%s)' contains nested $begin (did you forget an $end?)",
                                 name, option, identifier);
                             corto_dealloc(src);
                             goto error;
@@ -1106,7 +1102,7 @@ corto_int16 g_loadExisting(g_generator g, char* name, char* option, corto_ll *li
         corto_dealloc(code);
     } else {
         /* Catch error */
-        corto_lasterr();
+        corto_catch();
     }
 
 ok:
@@ -1132,7 +1128,7 @@ void g_fileClose(g_file file) {
         corto_ll_free(file->headers);
     }
 
-    corto_fileClose(file->file);
+    fclose(file->file);
     corto_dealloc(file->name);
     corto_dealloc(file);
 }
@@ -1150,7 +1146,7 @@ static g_file g_fileOpenIntern(g_generator g, char* name) {
     result->name = corto_strdup(name);
     result->generator = g;
 
-    corto_fileExtension(name, ext);
+    corto_file_extension(name, ext);
 
     /* First, load existing implementation if file exists */
     if (!strcmp(ext, "c") || !strcmp(ext, "cpp") || !strcmp(ext, "h") || !strcmp(ext, "hpp")) {
@@ -1168,8 +1164,9 @@ static g_file g_fileOpenIntern(g_generator g, char* name) {
         }
     }
 
-    result->file = corto_fileOpen(name);
+    result->file = fopen(name, "w");
     if (!result->file) {
+        corto_throw("'%s': %s", name, strerror(errno));
         corto_dealloc(result);
         goto error;
     }
@@ -1181,7 +1178,7 @@ static g_file g_fileOpenIntern(g_generator g, char* name) {
 
     return result;
 error:
-    corto_seterr("failed to open file '%s'", name);
+    corto_throw("failed to open file '%s'", name);
     return NULL;
 }
 
@@ -1203,7 +1200,13 @@ char* g_hiddenFilePath(g_generator g, corto_id buffer, char *name, ...) {
     va_start(args, name);
     vsprintf(namebuffer, name, args);
     va_end(args);
-    sprintf(buffer, ".corto/%s", namebuffer);
+
+    char *hidden;
+    if (!(hidden = g_getAttribute(g, "hidden"))) {
+        hidden = ".corto";
+    }
+
+    sprintf(buffer, "%s/%s", hidden, namebuffer);
     return buffer;    
 }
 
@@ -1226,8 +1229,22 @@ g_file g_hiddenFileOpen(g_generator g, char* name, ...) {
     va_start(args, name);
     vsprintf(namebuffer, name, args);
     va_end(args);
-    sprintf(filepath, ".corto/%s", namebuffer);
+
+    char *hidden;
+    if (!(hidden = g_getAttribute(g, "hidden"))) {
+        hidden = ".corto";
+    }
+
+    if (corto_file_test(hidden) != 1) {
+        if (corto_mkdir(hidden)) {
+            goto error;
+        }
+    }
+
+    sprintf(filepath, "%s/%s", hidden, namebuffer);
     return g_fileOpenIntern(g, filepath);
+error:
+    return NULL;
 }
 
 /* Lookup an existing code-snippet */
@@ -1244,9 +1261,6 @@ char* g_fileLookupSnippetIntern(g_file file, char* snippetId, corto_ll list) {
             snippet = corto_iter_next(&iter);
             corto_id path; strcpy(path, snippet->id);
             char *snippetPtr = path;
-
-            /* Temporary workaroud: translate deprecated '::' to '/' */
-            corto_pathFromFullname(path);
 
             /* Ignore initial scope character */
             if (*snippetPtr == '/') {
@@ -1344,13 +1358,13 @@ int g_fileWrite(g_file file, char* fmt, ...) {
 
     /* Write indentation & string */
     if (file->indent && file->endLine) {
-        if (fprintf(corto_fileGet(file->file), "%*s%s", file->indent * 4, " ", buffer) < 0) {
-            corto_seterr("g_fileWrite: writing to outputfile failed.");
+        if (fprintf(file->file, "%*s%s", file->indent * 4, " ", buffer) < 0) {
+            corto_throw("g_fileWrite: writing to outputfile failed.");
             goto error;
         }
     } else {
-        if (fprintf(corto_fileGet(file->file), "%s", buffer) < 0) {
-            corto_seterr("g_fileWrite: writing to outputfile failed.");
+        if (fprintf(file->file, "%s", buffer) < 0) {
+            corto_throw("g_fileWrite: writing to outputfile failed.");
             goto error;
         }
     }

@@ -82,7 +82,7 @@ typedef struct g_fileSnippet {
 
 typedef struct g_file_s* g_file;
 struct g_file_s {
-    corto_file file;
+    FILE* file;
     char *name;
     corto_uint32 indent;
     corto_object scope;
