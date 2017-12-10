@@ -3,9 +3,12 @@
     "type": "package",
     "value": {
         "author": "Sander Mertens",
-        "description": "Code generator framework",
-        "version": "1.0.0",        
-        "use": ["corto"],
-        "managed": false
+        "organization": "cortoproject",
+        "repository": "https://github.com/cortoproject/g",
+        "license": "MIT",
+        "description": "Code generator framework and utility functions",
+        "version": "1.0.0",
+        "managed": false,
+        "use": ["corto"]
     }
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2017 the corto developers
+/* Copyright (c) 2010-2018 the corto developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ static void g_reset(g_generator g) {
 
     /* Set id-generation to default */
     g->idKind = CORTO_GENERATOR_ID_DEFAULT;
-    
+
     /* Set action-callbacks */
     g->start_action = NULL;
     g->id_action = NULL;
@@ -266,9 +266,9 @@ corto_int16 g_load(g_generator g, char* library) {
     corto_assert(g->library != NULL, "generator located but dl_out is NULL");
 
     /* Load actions */
-    g->start_action = (g_startAction)corto_dl_proc(g->library, "corto_genMain");
+    g->start_action = (g_startAction)corto_dl_proc(g->library, "genmain");
     if (!g->start_action) {
-        corto_throw("g_load: %s: unresolved SYMBOL 'corto_genMain'", lib);
+        corto_throw("g_load: %s: unresolved SYMBOL 'genmain'", lib);
         corto_dealloc(lib);
         goto error;
     }
@@ -816,8 +816,8 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
 
     if (corto_checkAttr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
         /* For local identifiers, strip path from name */
-        if ((kind == CORTO_GENERATOR_ID_LOCAL) && 
-            !corto_instanceof(corto_package_o, o)) 
+        if ((kind == CORTO_GENERATOR_ID_LOCAL) &&
+            !corto_instanceof(corto_package_o, o))
         {
             corto_object parent = o;
             do {
@@ -827,7 +827,7 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
             corto_id signatureName;
             corto_signatureName(corto_idof(o), signatureName);
 
-            /* Only use shorter name if id of parent is not equal to id of object. 
+            /* Only use shorter name if id of parent is not equal to id of object.
              * Otherwise, this may result in name clashes. */
             if (parent && corto_idof(parent) && strcmp(signatureName, corto_idof(parent))) {
                 corto_path(_id, parent, o, "/");
@@ -886,7 +886,7 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
             }
             count ++;
         }
-        if (count == corto_ll_size(g->anonymousObjects)) {
+        if (count == corto_ll_count(g->anonymousObjects)) {
             corto_ll_append(g->anonymousObjects, o);
         }
 
@@ -898,7 +898,7 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
         } else {
             sprintf(_id, "anonymous_%u", count);
         }
-    } 
+    }
 
     if (g->id_action) {
         g->id_action(_id, id);
@@ -970,7 +970,7 @@ char* g_oid(g_generator g, corto_object o, corto_id id) {
 /* ==== Generator file-utility class */
 
 /* Convert a filename to a filepath, depending on it's extension. */
-static char* g_filePath_intern(g_generator g, char* filename, corto_char* buffer) {
+static char* g_filePath_intern(g_generator g, char* filename, char* buffer) {
     char* result;
     corto_id path;
 
@@ -978,14 +978,9 @@ static char* g_filePath_intern(g_generator g, char* filename, corto_char* buffer
 
     if (g->attributes) {
         char* ext = NULL;
-        char* fext, *ptr;
-
-        /* Get file-extension */
-        fext = NULL;
-        ptr = filename;
-        while((ptr = strchr(ptr, '.'))) {
-            ptr++;
-            fext = ptr;
+        char* fext = strrchr(filename, '.');
+        if (fext) {
+            fext ++;
         }
 
         /* Check whether there is an attribute with the file extension - determines where to put the file */
@@ -1189,7 +1184,10 @@ char* g_filePath(g_generator g, corto_id buffer, char *name, ...) {
     va_start(args, name);
     vsprintf(namebuffer, name, args);
     va_end(args);
-    return g_filePath_intern(g, namebuffer, buffer);
+    if (g_filePath_intern(g, namebuffer, buffer) != buffer) {
+        strcpy(buffer, namebuffer);
+    }
+    return buffer;
 }
 
 /* Get path for hidden file */
@@ -1207,7 +1205,7 @@ char* g_hiddenFilePath(g_generator g, corto_id buffer, char *name, ...) {
     }
 
     sprintf(buffer, "%s/%s", hidden, namebuffer);
-    return buffer;    
+    return buffer;
 }
 
 /* Open file */
