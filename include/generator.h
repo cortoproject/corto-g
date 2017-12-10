@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2017 the corto developers
+/* Copyright (c) 2010-2018 the corto developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -82,7 +82,7 @@ typedef struct g_fileSnippet {
 
 typedef struct g_file_s* g_file;
 struct g_file_s {
-    corto_file file;
+    FILE* file;
     char *name;
     corto_uint32 indent;
     corto_object scope;

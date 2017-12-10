@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2017 the corto developers
+/* Copyright (c) 2010-2018 the corto developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -315,7 +315,7 @@ static int corto_genTypeDependencies(corto_object o, corto_bool allowDeclared, c
         }
         break;
     default:
-        corto_seterr("typeKind '%s' not handled by code-generator.", corto_idof(corto_enum_constant(corto_typeKind_o, corto_type(t)->kind)));
+        corto_throw("typeKind '%s' not handled by code-generator.", corto_idof(corto_enum_constant(corto_typeKind_o, corto_type(t)->kind)));
         goto error;
         break;
     }
@@ -363,7 +363,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
 
     /* Check if object is valid */
     if (!corto_checkState(o, CORTO_VALID)) {
-        corto_seterr("%s has undefined objects (%s)",
+        corto_throw("%s has undefined objects (%s)",
             corto_fullpath(NULL, g_getCurrent(data->g)),
             corto_fullpath(NULL, o));
         return 1;
@@ -382,7 +382,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
     } else
     /* Check if object is defined - declared objects are allowed only for procedure objects. */
     if (corto_instanceof(corto_type_o, o) && !corto_checkState(o, CORTO_VALID)) {
-        corto_seterr("%s has undefined objects (%s).",
+        corto_throw("%s has undefined objects (%s).",
             corto_fullpath(NULL, g_getCurrent(data->g)),
             corto_fullpath(NULL, o));
         return 1;
@@ -403,7 +403,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
                         goto recursion;
                     } else {
                         /* If caller does not handle recursion, report error. */
-                        corto_seterr("invalid recursion for type '%s'",
+                        corto_throw("invalid recursion for type '%s'",
                             corto_fullpath(NULL, o));
                         goto error;
                     }
@@ -478,7 +478,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
                         *recursion = recurCheck;
                     } else {
                         /* Recursion has not been catched in time. */
-                        corto_seterr("recursion not handled for type '%s'",
+                        corto_throw("recursion not handled for type '%s'",
                             corto_fullpath(NULL, o));
                         goto error;
                     }

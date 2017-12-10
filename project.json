@@ -1,0 +1,14 @@
+{
+    "id": "corto/g",
+    "type": "package",
+    "value": {
+        "author": "Sander Mertens",
+        "organization": "cortoproject",
+        "repository": "https://github.com/cortoproject/g",
+        "license": "MIT",
+        "description": "Code generator framework and utility functions",
+        "version": "1.0.0",
+        "managed": false,
+        "use": ["corto"]
+    }
+}
