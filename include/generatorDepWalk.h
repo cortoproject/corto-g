@@ -26,7 +26,12 @@
 extern "C" {
 #endif
 
-CORTO_EXPORT int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_depresolver_action onDefine, void* userData);
+CORTO_EXPORT
+int corto_genDepWalk(
+    g_generator g,
+    corto_depresolver_action onDeclare,
+    corto_depresolver_action onDefine,
+    void* userData);
 
 #ifdef __cplusplus
 }
