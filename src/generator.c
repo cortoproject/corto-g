@@ -814,7 +814,7 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
 
     /* TODO: prefix i.c.m. !CORTO_GENERATOR_ID_DEFAULT & nested classes i.c.m. !CORTO_GENERATOR_ID_DEFAULT */
 
-    if (corto_checkAttr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
+    if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
         /* For local identifiers, strip path from name */
         if ((kind == CORTO_GENERATOR_ID_LOCAL) &&
             !corto_instanceof(corto_package_o, o))
@@ -1319,7 +1319,7 @@ corto_bool g_mustParse(g_generator g, corto_object o) {
     corto_bool result;
 
     result = TRUE;
-    if (corto_checkAttr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
+    if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
         result = !g_checkParseWalk(g->current, o);
     }
 

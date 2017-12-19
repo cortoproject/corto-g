@@ -62,7 +62,7 @@ static corto_genTypeDeclaration* corto_genTypeDeclared(corto_object o, corto_gen
 }
 
 static bool corto_isNamed(corto_object o) {
-    return corto_checkAttr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o);
+    return corto_check_attr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o);
 }
 
 /* Find type in parsed-list */
@@ -335,14 +335,14 @@ error:
  *   to the generator. */
 static int corto_genTypeProcedureDependencies(corto_function o, corto_genTypeWalk_t* data) {
     corto_uint32 i;
-    if (o->returnType && !corto_checkAttr(o->returnType, CORTO_ATTR_NAMED)) {
+    if (o->returnType && !corto_check_attr(o->returnType, CORTO_ATTR_NAMED)) {
         if (corto_genTypeParse(o->returnType, TRUE, NULL, data)) {
             goto error;
         }
     }
 
     for(i=0; i<o->parameters.length; i++) {
-        if (!corto_checkAttr(o->parameters.buffer[i].type, CORTO_ATTR_NAMED)) {
+        if (!corto_check_attr(o->parameters.buffer[i].type, CORTO_ATTR_NAMED)) {
             if (corto_genTypeParse(o->parameters.buffer[i].type, TRUE, NULL, data)) {
                 goto error;
             }
@@ -362,7 +362,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
     }
 
     /* Check if object is valid */
-    if (!corto_checkState(o, CORTO_VALID)) {
+    if (!corto_check_state(o, CORTO_VALID)) {
         corto_throw("%s has undefined objects (%s)",
             corto_fullpath(NULL, g_getCurrent(data->g)),
             corto_fullpath(NULL, o));
@@ -370,7 +370,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
     }
 
     /* Check if the object has an anonymous type */
-    if (!corto_checkAttr(corto_typeof(o), CORTO_ATTR_NAMED)) {
+    if (!corto_check_attr(corto_typeof(o), CORTO_ATTR_NAMED)) {
         if (corto_genTypeParse(corto_typeof(o), TRUE, NULL, data)) {
             goto error;
         }
@@ -381,7 +381,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
         corto_genTypeProcedureDependencies(corto_function(o), data);
     } else
     /* Check if object is defined - declared objects are allowed only for procedure objects. */
-    if (corto_instanceof(corto_type_o, o) && !corto_checkState(o, CORTO_VALID)) {
+    if (corto_instanceof(corto_type_o, o) && !corto_check_state(o, CORTO_VALID)) {
         corto_throw("%s has undefined objects (%s).",
             corto_fullpath(NULL, g_getCurrent(data->g)),
             corto_fullpath(NULL, o));
