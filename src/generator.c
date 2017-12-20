@@ -458,48 +458,6 @@ error:
 }
 
 /* ==== Generator utility functions */
-typedef struct g_serializeImports_t {
-    g_generator g;
-    corto_object stack[1024]; /* Maximum serializer-depth */
-    corto_uint32 count;
-    corto_bool nested;
-}g_serializeImports_t;
-
-corto_int16 g_leafDependencies(
-    g_generator g,
-    corto_object parent)
-{
-    char* packageDir = corto_locate(
-        corto_fullpath(NULL, parent),
-        NULL,
-        CORTO_LOCATION_LIBPATH
-    );
-
-    char* packagesTxt = corto_asprintf("%s/.corto/packages.txt", packageDir);
-
-    corto_ll deps = corto_loadGetDependencies(packagesTxt);
-    if (deps) {
-        if (!g->importsNested) {
-            g->importsNested = corto_ll_new();
-        }
-        corto_iter it = corto_ll_iter(deps);
-        while (corto_iter_hasNext(&it)) {
-            char* dep = corto_iter_next(&it);
-            corto_object o = corto_resolve(NULL, dep);
-            if (o) {
-                if (!corto_ll_hasObject(g->importsNested, o)) {
-                    corto_ll_append(g->importsNested, o);
-                    corto_claim(o);
-                } else {
-                    corto_release(o);
-                }
-            }
-        }
-        corto_loadFreePackages(deps);
-    }
-
-    return 0;
-}
 
 corto_int16 g_import(g_generator g, corto_object package) {
     if (!g->imports) {
@@ -508,9 +466,6 @@ corto_int16 g_import(g_generator g, corto_object package) {
     if (!corto_ll_hasObject(g->imports, package)) {
         corto_ll_insert(g->imports, package);
         corto_claim(package);
-
-        /* Recursively obtain imports */
-        g_leafDependencies(g, package);
     }
 
     return 0;
