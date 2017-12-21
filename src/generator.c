@@ -477,14 +477,14 @@ struct g_walkObjects_t {
 };
 
 int g_scopeWalk(corto_object o, int (*action)(corto_object,void*), void *data) {
-    corto_objectseq scope = corto_scopeClaim(o);
+    corto_objectseq scope = corto_scope_claim(o);
     corto_int32 i;
     for (i = 0; i < scope.length; i ++) {
         if (!action(scope.buffer[i], data)) {
             break;
         }
     }
-    corto_scopeRelease(scope);
+    corto_scope_release(scope);
     if (i != scope.length) {
         return 0;
     }
@@ -660,7 +660,7 @@ char* g_getPrefix(g_generator g, corto_object o) {
 static corto_bool g_isOverloaded(corto_function o) {
     corto_bool result = FALSE;
     corto_int32 i, d = 0;
-    corto_objectseq scope = corto_scopeClaim(corto_parentof(o));
+    corto_objectseq scope = corto_scope_claim(corto_parentof(o));
     for (i = 0; i < scope.length; i ++) {
         if (corto_instanceof(corto_procedure_o, corto_typeof(scope.buffer[i]))) {
             corto_assert(corto_overload(scope.buffer[i], corto_idof(o), &d) == 0, "overloading error discovered in generator");
@@ -670,7 +670,7 @@ static corto_bool g_isOverloaded(corto_function o) {
             }
         }
     }
-    corto_scopeRelease(scope);
+    corto_scope_release(scope);
     return result;
 }
 
@@ -697,10 +697,10 @@ static corto_char* g_oidTransform(g_generator g, corto_object o, corto_id _id, g
             corto_int32 count, i;
             strcpy(tmp, _id);
 
-            corto_signatureName(tmp, _id);
+            corto_sig_name(tmp, _id);
             strcat(_id, "(");
 
-            count = corto_signatureParamCount(tmp);
+            count = corto_sig_paramCount(tmp);
             if (count == -1) {
                 corto_throw("invalid signature '%s'", tmp);
                 goto error;
@@ -709,7 +709,7 @@ static corto_char* g_oidTransform(g_generator g, corto_object o, corto_id _id, g
             /* strcat is not the most efficient function here, but it is the easiest, and this
              * part of the code is not performance-critical. */
             for(i=0; i<count; i++) {
-                corto_signatureParamType(tmp, i, buff, NULL);
+                corto_sig_paramType(tmp, i, buff, NULL);
                 if (i) {
                     strcat(_id, ",");
                 }
@@ -780,7 +780,7 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
             } while (!corto_instanceof(corto_package_o, parent));
 
             corto_id signatureName;
-            corto_signatureName(corto_idof(o), signatureName);
+            corto_sig_name(corto_idof(o), signatureName);
 
             /* Only use shorter name if id of parent is not equal to id of object.
              * Otherwise, this may result in name clashes. */
