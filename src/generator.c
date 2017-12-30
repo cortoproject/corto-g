@@ -674,8 +674,14 @@ static corto_bool g_isOverloaded(corto_function o) {
     return result;
 }
 
-/* Object transformations */
-static corto_char* g_oidTransform(g_generator g, corto_object o, corto_id _id, g_idKind kind) {
+/* Object id transformations */
+static
+corto_char* g_oidTransform(
+    g_generator g,
+    corto_object o,
+    corto_id _id,
+    g_idKind kind)
+{
     CORTO_UNUSED(g);
 
     /* If the object is a function with an argumentlist, cut the argumentlist
@@ -770,14 +776,14 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
     /* TODO: prefix i.c.m. !CORTO_GENERATOR_ID_DEFAULT & nested classes i.c.m. !CORTO_GENERATOR_ID_DEFAULT */
 
     if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
-        /* For local identifiers, strip path from name */
+        /* For local identifiers, strip package path from name */
         if ((kind == CORTO_GENERATOR_ID_LOCAL) &&
             !corto_instanceof(corto_package_o, o))
         {
             corto_object parent = o;
             do {
                 parent = corto_parentof(parent);
-            } while (!corto_instanceof(corto_package_o, parent));
+            } while (parent != g_getCurrent(g));
 
             corto_id signatureName;
             corto_sig_name(corto_idof(o), signatureName);
