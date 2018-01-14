@@ -400,7 +400,7 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
                 corto_path(NULL, root_o, p, "/"), NULL, CORTO_LOCATION_INCLUDE);
 
         if (!includePath) {
-            corto_throw("package '%s' not found", corto_path(NULL, root_o, p, "/"));
+            corto_throw("include path for package '%s' not found", corto_path(NULL, root_o, p, "/"));
             goto error;
         }
 
@@ -459,6 +459,63 @@ error:
 
 /* ==== Generator utility functions */
 
+/* Test if object must be parsed */
+static
+int g_checkParseWalk(void* o, void* userData) {
+    g_object* _o;
+    int result;
+
+    _o = o;
+    result = 1;
+
+    /* If parseSelf, and object equals generatorObject, object must be parsed. */
+    if (_o->parseSelf && (_o->o == userData)) {
+        result = 0;
+
+    /* Look for generator object in object-scope */
+    } else if (_o->parseScope) {
+        corto_object ptr = userData;
+
+        /* Walk object-scope */
+        while((ptr = corto_parentof(ptr)) && (ptr != _o->o));
+        if (ptr) {
+            result = 0;
+        }
+    }
+
+    return result;
+}
+
+static
+bool g_isMarked(g_generator g, corto_object o) {
+    corto_object marker = corto_sourceof(o);
+    bool bootstrap = !strcmp(g_getAttribute(g, "bootstrap"), "true");
+
+    /* When generating core types (bootstrap = true) always generate for all
+     * objects in the specified scope, as bootstrap objects are not created
+     * by the code generator.
+     * In ordinary generation, check if objects have a marker. This allows
+     * placing new objects in existing scopes without also generating for
+     * objects that already existed in the scope. */
+     return bootstrap || (marker && !strcmp(corto_idof(marker), "pp_marker"));
+}
+
+bool g_mustParse(g_generator g, corto_object o) {
+    bool result;
+
+    result = true;
+    if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
+        if (g_isMarked(g, o)) {
+            /* Check if the object is in the list of things to parse */
+            result = !g_checkParseWalk(g->current, o);
+        } else {
+            result = false;
+        }
+    }
+
+    return result;
+}
+
 corto_int16 g_import(g_generator g, corto_object package) {
     if (!g->imports) {
         g->imports = corto_ll_new();
@@ -472,16 +529,19 @@ corto_int16 g_import(g_generator g, corto_object package) {
 }
 
 struct g_walkObjects_t {
+    g_generator g;
     g_walkAction action;
     void* userData;
 };
 
-int g_scopeWalk(corto_object o, int (*action)(corto_object,void*), void *data) {
+int g_scopeWalk(g_generator g, corto_object o, int (*action)(corto_object,void*), void *data) {
     corto_objectseq scope = corto_scope_claim(o);
     corto_int32 i;
     for (i = 0; i < scope.length; i ++) {
-        if (!action(scope.buffer[i], data)) {
-            break;
+        if (g_isMarked(g, scope.buffer[i])) {
+            if (!action(scope.buffer[i], data)) {
+                break;
+            }
         }
     }
     corto_scope_release(scope);
@@ -501,7 +561,7 @@ int g_walkObjects(void* o, void* userData) {
         goto stop;
     }
 
-    return g_scopeWalk(o, g_walkObjects, userData);
+    return g_scopeWalk(data->g, o, g_walkObjects, userData);
 stop:
     return 0;
 }
@@ -519,16 +579,17 @@ static int g_walkIterObject(g_generator g, g_object *o, g_walkAction action, voi
     if (o->parseScope && scopeWalk) {
         g->current = o;
         if (!recursiveWalk) {
-            if (!g_scopeWalk(o->o, action, userData)) {
+            if (!g_scopeWalk(g, o->o, action, userData)) {
                 goto stop;
             }
         } else {
             struct g_walkObjects_t walkData;
             walkData.action = action;
             walkData.userData = userData;
+            walkData.g = g;
 
             /* Recursively walk scopes */
-            if (!g_scopeWalk(o->o, g_walkObjects, &walkData)) {
+            if (!g_scopeWalk(g, o->o, g_walkObjects, &walkData)) {
                 goto stop;
             }
         }
@@ -783,7 +844,11 @@ char* g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind) {
             corto_object parent = o;
             do {
                 parent = corto_parentof(parent);
-            } while (parent != g_getCurrent(g));
+            } while (parent && (parent != g_getCurrent(g)));
+
+            if (!parent) {
+                parent = root_o;
+            }
 
             corto_id signatureName;
             corto_sig_name(corto_idof(o), signatureName);
@@ -1248,43 +1313,6 @@ char* g_fileLookupSnippet(g_file file, char* snippetId) {
 
 char* g_fileLookupHeader(g_file file, char* snippetId) {
     return g_fileLookupSnippetIntern(file, snippetId, file->headers);
-}
-
-/* Test if object must be parsed */
-int g_checkParseWalk(void* o, void* userData) {
-    g_object* _o;
-    int result;
-
-    _o = o;
-    result = 1;
-
-    /* If parseSelf, and object equals generatorObject, object must be parsed. */
-    if (_o->parseSelf && (_o->o == userData)) {
-        result = 0;
-
-    /* Look for generator object in object-scope */
-    } else if (_o->parseScope) {
-        corto_object ptr = userData;
-
-        /* Walk object-scope */
-        while((ptr = corto_parentof(ptr)) && (ptr != _o->o));
-        if (ptr) {
-            result = 0;
-        }
-    }
-
-    return result;
-}
-
-corto_bool g_mustParse(g_generator g, corto_object o) {
-    corto_bool result;
-
-    result = TRUE;
-    if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_childof(root_o, o)) {
-        result = !g_checkParseWalk(g->current, o);
-    }
-
-    return result;
 }
 
 /* Increase indentation */
