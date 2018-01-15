@@ -133,14 +133,21 @@ char* g_getProjectName(g_generator g) {
     return ptr;
 }
 
-/* Get current object */
 corto_object g_getCurrent(g_generator g) {
-    corto_object result;
-
-    result = NULL;
+    corto_object result = NULL;
 
     if (g->current) {
         result = g->current->o;
+    }
+
+    return result;
+}
+
+corto_package g_getPackage(g_generator g) {
+    corto_object result = g->package;
+
+    if (!result) {
+        result = g_getCurrent(g); /* Deprecated: for backwards compatibility */
     }
 
     return result;
@@ -429,9 +436,10 @@ error:
 /* Start generator */
 corto_int16 g_start(g_generator g) {
 
-    /* packages.txt may contain more packages than is found by looking at the
-     * metadata, however no code will be generated based on those packages so
-     * they don't have to be configured for code generators */
+    /* Resolve package from name */
+    if (g->name) {
+        g->package = corto_lookup(NULL, g->name);
+    }
 
     /* Find include paths for packages, load prefix file into generator */
     if (g->imports) {

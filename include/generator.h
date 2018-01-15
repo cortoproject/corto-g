@@ -69,6 +69,7 @@ struct g_generator_s {
     g_idAction id_action;
 
     g_object* current;
+    corto_object package;
     corto_bool inWalk;
     corto_ll anonymousObjects;
 };
@@ -103,6 +104,9 @@ CORTO_EXPORT char *g_getName(g_generator g);
 
 /* Obtain project name */
 CORTO_EXPORT char *g_getProjectName(g_generator g);
+
+/* Get package object. */
+CORTO_EXPORT corto_package g_getPackage(g_generator g);
 
 /* Obtain generator object that is currently parsed. */
 CORTO_EXPORT corto_object g_getCurrent(g_generator g);
