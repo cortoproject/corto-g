@@ -183,7 +183,6 @@ int corto_genDepBuildAction(corto_object o, void* userData) {
     g_itemWalk_t data;
     struct g_depWalk_t walkData;
     corto_walk_opt s;
-    int result;
     corto_object parent = NULL;
 
     if (corto_check_attr(o, CORTO_ATTR_NAMED)) {
@@ -196,61 +195,53 @@ int corto_genDepBuildAction(corto_object o, void* userData) {
     walkData.data = data;
     walkData.anonymousObjects = data->anonymousObjects;
 
-    /* If object a builtin package, signal that a bootstrap is found, indicating
-     * that dependencies should be disregarded. */
-    if (corto_isbuiltin(o)) {
-        data->bootstrap = TRUE;
-        result = 0;
-    } else {
-        /* Insert type-dependency: object can be declared only after it's type is defined. */
-        if (g_mustParse(data->g, corto_typeof(o))) {
-            corto_type t = corto_genDepFindAnonymous(&walkData, corto_typeof(o));
-            corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, t, CORTO_VALID);
-        }
 
-        /* TODO: this is not nice */
-        if (corto_class_instanceof(corto_procedure_o, corto_typeof(o))) {
-            /* Insert base-dependency: methods may only be declared after the base of a class has been defined. */
-            if (corto_typeof(o) != corto_type(corto_function_o)) {
-                if (corto_class_instanceof(corto_class_o, parent) && corto_interface(parent)->base) {
-                    if (g_mustParse(data->g, corto_interface(parent)->base)) {
-                        corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, corto_interface(parent)->base, CORTO_VALID);
-                    }
-                }
-            }
-
-            /* Add dependencies on function parameters - types must be declared before function is declared. */
-            if (corto_genDepBuildProc(corto_function(o), &walkData)) {
-                goto error;
-            }
-        }
-
-        /* Insert dependency on parent */
-        if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_parentof(o)) {
-            if (parent != root_o) { /* Root is always available */
-                corto_int8 parentState = corto_type(corto_typeof(o))->options.parentState;
-
-                corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, parent, parentState);
-                if (parentState == CORTO_DECLARED) {
-                    corto_depresolver_depend(data->resolver, parent, CORTO_VALID, o, CORTO_VALID);
-                }
-            }
-        }
-
-        /* Guard to ensure that the object is added to the dependency administration */
-        corto_depresolver_insert(data->resolver, o);
-
-        /* Insert dependencies on references in the object-value */
-        s = corto_genDepSerializer();
-        if (corto_walk(&s, o, &walkData)) {
-            goto error;
-        }
-        data->anonymousObjects = walkData.anonymousObjects;
-
-        result = 1;
+    /* Insert type-dependency: object can be declared only after it's type is defined. */
+    if (g_mustParse(data->g, corto_typeof(o))) {
+        corto_type t = corto_genDepFindAnonymous(&walkData, corto_typeof(o));
+        corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, t, CORTO_VALID);
     }
 
-    return result;
+    /* TODO: this is not nice */
+    if (corto_class_instanceof(corto_procedure_o, corto_typeof(o))) {
+        /* Insert base-dependency: methods may only be declared after the base of a class has been defined. */
+        if (corto_typeof(o) != corto_type(corto_function_o)) {
+            if (corto_class_instanceof(corto_class_o, parent) && corto_interface(parent)->base) {
+                if (g_mustParse(data->g, corto_interface(parent)->base)) {
+                    corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, corto_interface(parent)->base, CORTO_VALID);
+                }
+            }
+        }
+
+        /* Add dependencies on function parameters - types must be declared before function is declared. */
+        if (corto_genDepBuildProc(corto_function(o), &walkData)) {
+            goto error;
+        }
+    }
+
+    /* Insert dependency on parent */
+    if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_parentof(o)) {
+        if (parent != root_o) { /* Root is always available */
+            corto_int8 parentState = corto_type(corto_typeof(o))->options.parentState;
+
+            corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, parent, parentState);
+            if (parentState == CORTO_DECLARED) {
+                corto_depresolver_depend(data->resolver, parent, CORTO_VALID, o, CORTO_VALID);
+            }
+        }
+    }
+
+    /* Guard to ensure that the object is added to the dependency administration */
+    corto_depresolver_insert(data->resolver, o);
+
+    /* Insert dependencies on references in the object-value */
+    s = corto_genDepSerializer();
+    if (corto_walk(&s, o, &walkData)) {
+        goto error;
+    }
+    data->anonymousObjects = walkData.anonymousObjects;
+
+    return 1;
 error:
     return 0;
 }
@@ -262,7 +253,7 @@ static int corto_genDeclareAction(corto_object o, void* userData) {
     if (data->onDeclare) {
         data->onDeclare(o, data->userData);
     }
-    
+
     return 1;
 }
 
@@ -280,6 +271,7 @@ static int corto_genDefineAction(corto_object o, void* userData) {
 int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_depresolver_action onDefine, void* userData) {
     struct g_itemWalk_t walkData;
     corto_depresolver resolver = corto_depresolverCreate(corto_genDeclareAction, corto_genDefineAction, &walkData);
+    bool bootstrap = !strcmp(g_getAttribute(g, "bootstrap"), "true");
 
     /* Prepare walkData */
     walkData.g = g;
@@ -291,14 +283,16 @@ int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_de
     walkData.anonymousObjects = NULL;
 
     /* Build dependency administration */
-    if (!g_walkRecursive(g, corto_genDepBuildAction, &walkData)) {
-        if (!walkData.bootstrap) {
+    if (!bootstrap) {
+        if (!g_walkRecursive(g, corto_genDepBuildAction, &walkData)) {
             corto_trace("dependency-builder failed.");
             goto error;
-        } else {
-            g_walkRecursive(g, corto_genDeclareAction, &walkData);
-            g_walkRecursive(g, corto_genDefineAction, &walkData);
         }
+    } else {
+        /* When generating for bootstrap, disregard dependencies */
+        g_walkRecursive(g, corto_genDeclareAction, &walkData);
+        g_walkRecursive(g, corto_genDefineAction, &walkData);
+
     }
 
     if (walkData.anonymousObjects) {
@@ -307,6 +301,7 @@ int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_de
 
     return corto_depresolver_walk(resolver);
 error:
+    printf("Error\n");
     return -1;
 }
 
