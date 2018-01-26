@@ -65,7 +65,11 @@ struct corto_depresolver_s {
 static int g_itemPrint(void* o, void* userData);
 
 /* Create new item */
-g_item g_itemNew(corto_object o, corto_depresolver data) {
+static
+g_item g_itemNew(
+    corto_object o,
+    corto_depresolver data)
+{
     g_item result;
 
     result = corto_alloc(sizeof(struct g_item));
@@ -88,7 +92,10 @@ g_item g_itemNew(corto_object o, corto_depresolver data) {
 }
 
 /* Delete item */
-void g_itemFree(g_item item) {
+static
+void g_itemFree(
+    g_item item)
+{
     g_dependency dep;
 
     /* Free onDeclared list */
@@ -111,7 +118,11 @@ void g_itemFree(g_item item) {
 }
 
 /* Lookup item in administration */
-g_item g_itemLookup(corto_object o, corto_depresolver data) {
+static
+g_item g_itemLookup(
+    corto_object o,
+    corto_depresolver data)
+{
     corto_iter iter;
     g_item item;
 
@@ -134,7 +145,11 @@ g_item g_itemLookup(corto_object o, corto_depresolver data) {
 }
 
 /* Resolve dependency, decrease refcount */
-static int g_itemResolveDependency(void* o, void* userData) {
+static
+int g_itemResolveDependency(
+    void* o,
+    void* userData)
+{
     g_dependency dep;
     corto_depresolver data;
 
@@ -175,21 +190,33 @@ static int g_itemResolveDependency(void* o, void* userData) {
 }
 
 /* Declare item */
-static void g_itemDeclare(g_item item, corto_depresolver data) {
+static
+void g_itemDeclare(
+    g_item item,
+    corto_depresolver data)
+{
     if (data->onDeclare) {
         data->onDeclare(item->o, data->userData);
     }
 }
 
 /* Define item */
-static void g_itemDefine(g_item item, corto_depresolver data) {
+static
+void g_itemDefine(
+    g_item item,
+    corto_depresolver data)
+{
     if (data->onDefine) {
         data->onDefine(item->o, data->userData);
     }
 }
 
 /* Declare an item */
-static int g_itemPrint(void* o, void* userData) {
+static
+int g_itemPrint(
+    void* o,
+    void* userData)
+{
     g_item item;
     corto_depresolver data;
 
@@ -220,7 +247,11 @@ static int g_itemPrint(void* o, void* userData) {
 }
 
 /* Collect initial objects */
-int g_itemCollectinitial(void* o, void* userData) {
+static
+int g_itemCollectinitial(
+    void* o,
+    void* userData)
+{
     g_item item;
     corto_depresolver data;
 
@@ -235,6 +266,7 @@ int g_itemCollectinitial(void* o, void* userData) {
 }
 
 /* Print items (forward them to declare & define callbacks) */
+static
 int g_itemPrintItems(struct corto_depresolver_s* data) {
     g_item item;
 
@@ -255,10 +287,17 @@ error:
     return -1;
 }
 
-static int g_itemResolveCycles(g_item item, struct corto_depresolver_s* data);
+static
+int g_itemResolveCycles(
+    g_item item,
+    struct corto_depresolver_s* data);
 
 /* Scan stack for occurrence of dependency. */
-corto_uint32 g_dependencyOnStack(g_dependency dep, struct corto_depresolver_s* data) {
+static
+corto_uint32 g_dependencyOnStack(
+    g_dependency dep,
+    struct corto_depresolver_s* data)
+{
     corto_uint32 i;
     corto_bool found;
 
@@ -275,7 +314,11 @@ corto_uint32 g_dependencyOnStack(g_dependency dep, struct corto_depresolver_s* d
 }
 
 /* Resolve cycles for dependency */
-static void g_itemResolveDependencyCycles(g_dependency dep, struct corto_depresolver_s* data) {
+static
+void g_itemResolveDependencyCycles(
+    g_dependency dep,
+    struct corto_depresolver_s* data)
+{
     corto_uint32 sp;
 
     /* If item is already marked, there is no need to investigate it further. */
@@ -328,7 +371,11 @@ static void g_itemResolveDependencyCycles(g_dependency dep, struct corto_depreso
  * If there are cycles, the only cycles that can be broken are the DECLARED | DEFINED dependencies, which
  * are stored as dependency objects with the 'weak' flag set to TRUE.
  */
-static int g_itemResolveCycles(g_item item, struct corto_depresolver_s* data) {
+static
+int g_itemResolveCycles(
+    g_item item,
+    struct corto_depresolver_s* data)
+{
     corto_iter iter;
     g_dependency dep;
     corto_uint32 sp;
@@ -372,7 +419,11 @@ static int g_itemResolveCycles(g_item item, struct corto_depresolver_s* data) {
 }
 
 /* Walk objects in correct dependency order. */
-corto_depresolver corto_depresolverCreate(corto_depresolver_action onDeclare, corto_depresolver_action onDefine, void* userData) {
+corto_depresolver corto_depresolverCreate(
+    corto_depresolver_action onDeclare,
+    corto_depresolver_action onDefine,
+    void* userData)
+{
     corto_depresolver result;
 
     result = corto_alloc(sizeof(struct corto_depresolver_s));
@@ -393,7 +444,13 @@ corto_depresolver corto_depresolverCreate(corto_depresolver_action onDeclare, co
  *   @param dependency The dependency object.
  *   @param dependencyKind The dependency object must reach at least this state before the dependency can be resolved.
  */
-void corto_depresolver_depend(corto_depresolver this, void* o, corto_state kind, void* d, corto_state dependencyKind) {
+void corto_depresolver_depend(
+    corto_depresolver this,
+    void* o,
+    corto_state kind,
+    void* d,
+    corto_state dependencyKind)
+{
     g_dependency dep;
     g_item dependent, dependency;
 
@@ -448,7 +505,7 @@ void corto_depresolver_depend(corto_depresolver this, void* o, corto_state kind,
             corto_ll_insert(dependency->onDefined, dep);
             break;
         default:
-            corto_assert(0, "invalid dependency-kind.");
+            corto_assert(0, "invalid dependency-kind (%d)", dependencyKind);
             break;
         }
     }

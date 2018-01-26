@@ -138,6 +138,7 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
                     }
                 }
             }
+            
             corto_depresolver_depend(data->data->resolver, data->o, CORTO_VALID, o, state);
         } else {
             corto_depresolver_depend(data->data->resolver, data->o, CORTO_VALID, o, CORTO_VALID);
