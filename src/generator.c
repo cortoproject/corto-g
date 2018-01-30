@@ -264,7 +264,7 @@ corto_int16 g_load(g_generator g, char* library) {
 
     /* Load library from generator path */
     char* package = corto_asprintf("driver/gen/%s", library);
-    char* lib = corto_locate(package, &g->library, CORTO_LOCATION_LIB);
+    const char* lib = corto_locate(package, &g->library, CORTO_LOCATE_LIB);
     if (!lib) {
         corto_throw("generator '%s' not found", package);
         goto error;
@@ -276,14 +276,12 @@ corto_int16 g_load(g_generator g, char* library) {
     g->start_action = (g_startAction)corto_dl_proc(g->library, "genmain");
     if (!g->start_action) {
         corto_throw("g_load: %s: unresolved SYMBOL 'genmain'", lib);
-        corto_dealloc(lib);
         goto error;
     }
     g->id_action = (g_idAction)corto_dl_proc(g->library, "corto_genId");
 
     /* Function is allowed to be absent. */
 
-    corto_dealloc(lib);
     corto_dealloc(package);
 
     return 0;
@@ -402,9 +400,9 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
     while (corto_iter_hasNext(&iter)) {
         corto_object p = corto_iter_next(&iter);
         char* prefix;
-        char* includePath =
+        const char* includePath =
             corto_locate(
-                corto_path(NULL, root_o, p, "/"), NULL, CORTO_LOCATION_INCLUDE);
+                corto_path(NULL, root_o, p, "/"), NULL, CORTO_LOCATE_INCLUDE);
 
         if (!includePath) {
             corto_throw("include path for package '%s' not found", corto_path(NULL, root_o, p, "/"));
@@ -425,7 +423,6 @@ corto_int16 g_loadPrefixes(g_generator g, corto_ll list) {
             corto_catch();
         }
         corto_dealloc(prefixFileStr);
-        corto_dealloc(includePath);
     }
 
     return 0;
