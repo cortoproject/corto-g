@@ -232,8 +232,10 @@ static int corto_genTypeMapDependencies(corto_map t, corto_bool allowDeclared, c
     }
 
     /* Serialize keyType */
-    if (corto_genTypeParse(t->keyType, TRUE, recursion, data)) {
-        goto error;
+    if (t->keyType) {
+        if (corto_genTypeParse(t->keyType, TRUE, recursion, data)) {
+            goto error;
+        }
     }
 
     return 0;
