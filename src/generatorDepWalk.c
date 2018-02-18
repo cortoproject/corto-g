@@ -138,7 +138,7 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
                     }
                 }
             }
-            
+
             corto_depresolver_depend(data->data->resolver, data->o, CORTO_VALID, o, state);
         } else {
             corto_depresolver_depend(data->data->resolver, data->o, CORTO_VALID, o, CORTO_VALID);
@@ -302,7 +302,6 @@ int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_de
 
     return corto_depresolver_walk(resolver);
 error:
-    printf("Error\n");
     return -1;
 }
 

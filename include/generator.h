@@ -39,7 +39,6 @@ typedef struct g_object {
     corto_object o;
     corto_bool parseSelf;
     corto_bool parseScope;
-    char *prefix;
 } g_object;
 
 typedef struct g_attribute {
@@ -49,7 +48,7 @@ typedef struct g_attribute {
 
 typedef enum g_idKind {
     CORTO_GENERATOR_ID_DEFAULT,
-    CORTO_GENERATOR_ID_LOCAL,
+    CORTO_GENERATOR_ID_SHORT,
     CORTO_GENERATOR_ID_CLASS_UPPER,
     CORTO_GENERATOR_ID_CLASS_LOWER
 }g_idKind;
@@ -59,7 +58,6 @@ struct g_generator_s {
     corto_ll files;
     corto_dl library;
     corto_ll imports;
-    corto_ll importsNested; /* Indirect imports must be loaded for prefixes */
     char *name;
     char *language;
     g_idKind idKind;
@@ -115,7 +113,7 @@ CORTO_EXPORT corto_object g_getCurrent(g_generator g);
 CORTO_EXPORT char *g_getLanguage(g_generator g);
 
 /* Instruct the generator to generate for an object. */
-CORTO_EXPORT void g_parse(g_generator generator, corto_object object, corto_bool parseSelf, corto_bool parseScope, char *prefix);
+CORTO_EXPORT void g_parse(g_generator generator, corto_object object, corto_bool parseSelf, corto_bool parseScope);
 
 /* Set attribute of generator */
 CORTO_EXPORT void g_setAttribute(g_generator g, char *key, char *value);
@@ -138,26 +136,26 @@ CORTO_EXPORT int16_t g_start(g_generator generator);
 CORTO_EXPORT int16_t g_import(g_generator generator, corto_object package);
 
 /* Walk generator objects. Parse scopes of generator objects when configured. */
-CORTO_EXPORT int g_walk(g_generator generator, g_walkAction o, void* userData);
+CORTO_EXPORT int g_walk(g_generator generator, g_walkAction action, void* userData);
 
 /* Walk generator objects, do not parse scopes even if configured. */
 CORTO_EXPORT int g_walkNoScope(g_generator g, g_walkAction action, void* userData);
 
 /* Recursively walk objects, will walk all objects under the scope of generator objects. */
-CORTO_EXPORT int g_walkRecursive(g_generator generator, g_walkAction o, void* userData);
+CORTO_EXPORT int g_walkRecursive(g_generator generator, g_walkAction action, void* userData);
+
+/* Recursively walk all objects, include anonymous objects. */
+CORTO_EXPORT int g_walkAll(g_generator generator, g_walkAction action, void* userData);
 
 /* Find generator object for object */
 CORTO_EXPORT g_object* g_findObject(g_generator g, corto_object o, corto_object* match);
 CORTO_EXPORT g_object* g_findObjectInclusive(g_generator g, corto_object o, corto_object* match);
 
-/* Lookup prefix for object. */
-CORTO_EXPORT char *g_getPrefix(g_generator g, corto_object o);
-
 /* Translate an object to a language-specific identifier. */
 CORTO_EXPORT char *g_fullOid(g_generator g, corto_object o, corto_id id);
 
-/* Translate an object to a local language-specific identifier (no package). */
-CORTO_EXPORT char *g_localOid(g_generator g, corto_object o, corto_id id);
+/* Translate an object to a short identifier. */
+CORTO_EXPORT char *g_shortOid(g_generator g, corto_object o, corto_id id);
 
 /* Translate an object to a language-specific identifier with idKind provided. */
 CORTO_EXPORT char *g_fullOidExt(g_generator g, corto_object o, corto_id id, g_idKind kind);
@@ -175,31 +173,31 @@ CORTO_EXPORT corto_bool g_mustParse(g_generator g, corto_object o);
 /* === Generator file-utility class */
 
 /* Open a file for writing. */
-CORTO_EXPORT g_file g_fileOpen(g_generator generator, char *name, ...);
+CORTO_EXPORT g_file g_fileOpen(g_generator generator, const char *name, ...);
 
 /* Open hidden file for writing. */
-CORTO_EXPORT g_file g_hiddenFileOpen(g_generator generator, char *name, ...);
+CORTO_EXPORT g_file g_hiddenFileOpen(g_generator generator, const char *name, ...);
 
 /* Get path for file */
-CORTO_EXPORT char* g_filePath(g_generator generator, corto_id buffer, char *name, ...);
+CORTO_EXPORT char* g_filePath(g_generator generator, corto_id buffer, const char *name, ...);
 
 /* Get path for hidden file */
-CORTO_EXPORT char* g_hiddenFilePath(g_generator generator, corto_id buffer, char *name, ...);
+CORTO_EXPORT char* g_hiddenFilePath(g_generator generator, corto_id buffer, const char *name, ...);
 
 /* Close a file. */
 CORTO_EXPORT void g_fileClose(g_file file);
 
 /* Return contents of a file. */
-CORTO_EXPORT char *g_fileRead(g_generator generator, char *name);
+CORTO_EXPORT char *g_fileRead(g_generator generator, const char *name);
 
 /* Lookup an open file. */
-CORTO_EXPORT void g_fileGet(g_generator generator, char *name);
+CORTO_EXPORT void g_fileGet(g_generator generator, const char *name);
 
 /* Lookup an existing code-snippet */
-CORTO_EXPORT char *g_fileLookupSnippet(g_file file, char *snippetId);
+CORTO_EXPORT char *g_fileLookupSnippet(g_file file, const char *snippetId);
 
 /* Lookup an existing code-header */
-CORTO_EXPORT char *g_fileLookupHeader(g_file file, char *snippetId);
+CORTO_EXPORT char *g_fileLookupHeader(g_file file, const char *snippetId);
 
 /* Increase indentation. */
 CORTO_EXPORT void g_fileIndent(g_file file);

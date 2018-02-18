@@ -29,6 +29,7 @@ typedef struct corto_genTypeWalk_t {
     corto_ll declared; /* List of declared objects */
     g_walkAction onDeclare;
     g_walkAction onDefine;
+    g_walkAction onDeclareDefine;
     void* userData;
 }corto_genTypeWalk_t;
 
@@ -357,7 +358,13 @@ error:
 }
 
 /* Parse object */
-static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bool* recursion, corto_genTypeWalk_t* data) {
+static
+int corto_genTypeParse(
+    corto_object o,
+    corto_bool allowDeclared,
+    corto_bool* recursion,
+    corto_genTypeWalk_t* data)
+{
 
     if (recursion) {
         *recursion = FALSE;
@@ -452,9 +459,15 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
                         case CORTO_COMPOSITE:
                             /* Composite types must be forward-declared */
                             if (!decl->printed) {
-                                if (data->onDeclare) {
-                                    if (data->onDeclare(o, data->userData)) {
-                                        goto error;
+                                bool isInterface = corto_interface(o)->kind == CORTO_INTERFACE;
+                                if (!isInterface && data->onDeclareDefine) {
+                                    data->onDeclareDefine(o, data->userData);
+                                    break;
+                                } else {
+                                    if (data->onDeclare) {
+                                        if (data->onDeclare(o, data->userData)) {
+                                            goto error;
+                                        }
                                     }
                                 }
                             }
@@ -501,7 +514,13 @@ static int corto_genTypeWalk(corto_object o, void* userData) {
 }
 
 /* Generator main */
-int corto_genTypeDepWalk(g_generator g, g_walkAction onDeclare, g_walkAction onDefine, void* userData) {
+int corto_genTypeDepWalk(
+    g_generator g,
+    g_walkAction onDeclare,
+    g_walkAction onDefine,
+    g_walkAction onDeclareDefine,
+    void* userData)
+{
     corto_genTypeWalk_t walkData;
     struct corto_genTypeDeclaration* decl;
 
@@ -511,6 +530,7 @@ int corto_genTypeDepWalk(g_generator g, g_walkAction onDeclare, g_walkAction onD
     walkData.declared = corto_ll_new();
     walkData.onDeclare = onDeclare;
     walkData.onDefine = onDefine;
+    walkData.onDeclareDefine = onDeclareDefine;
     walkData.userData = userData;
 
     /* Walk objects */
