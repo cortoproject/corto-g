@@ -21,8 +21,6 @@
 
 #include "corto/g/g.h"
 
-#ifdef CORTO_GENERATOR
-
 typedef struct corto_genTypeWalk_t {
     g_generator g;
     corto_ll parsed; /* List of parsed types */
@@ -550,5 +548,3 @@ int corto_genTypeDepWalk(
 error:
     return -1;
 }
-
-#endif

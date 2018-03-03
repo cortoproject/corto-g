@@ -737,7 +737,7 @@ char* g_fullOidExt(
             if (child_lang) from = corto_lang_o;
             else if (child_vstore) from = corto_vstore_o;
             else if (child_secure) from = corto_o;
-            else if (child_native) from = corto_native_o;
+            else if (child_native) from = corto_o;
             corto_path(tmp, from, o, "/");
             sprintf(_id, "corto/%s", tmp);
         } else {

@@ -21,8 +21,6 @@
 
 #include "corto/g/g.h"
 
-#ifdef CORTO_GENERATOR
-
 int corto_genDepBuildAction(corto_object o, void* userData);
 
 /* Walk objects in correct dependency order. */
@@ -304,5 +302,3 @@ int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_de
 error:
     return -1;
 }
-
-#endif
