@@ -19,10 +19,14 @@
  * THE SOFTWARE.
  */
 
-#include "corto/g/g.h"
+#include <corto/g/g.h>
 
 /* Close file */
-static int g_closeFile(void* o, void* ctx) {
+static
+int g_closeFile(
+    void* o,
+    void* ctx)
+{
     g_file file;
     CORTO_UNUSED(ctx);
 
@@ -33,7 +37,10 @@ static int g_closeFile(void* o, void* ctx) {
     return 1;
 }
 
-static void g_reset(g_generator g) {
+static
+void g_reset(
+    g_generator g)
+{
     if (g->library) {
         corto_dl_close(g->library);
         g->library = NULL;
@@ -72,7 +79,10 @@ static void g_reset(g_generator g) {
 }
 
 /* Generator functions */
-g_generator g_new(char* name, char* language) {
+g_generator g_new(
+    char* name,
+    char* language)
+{
     g_generator result;
 
     result = corto_calloc(sizeof(struct g_generator_s));
@@ -94,7 +104,10 @@ g_generator g_new(char* name, char* language) {
 }
 
 /* Control how id's are generated */
-g_idKind g_setIdKind(g_generator g, g_idKind kind) {
+g_idKind g_setIdKind(
+    g_generator g,
+    g_idKind kind)
+{
     g_idKind prev;
     prev = g->idKind;
     g->idKind = kind;
@@ -102,7 +115,9 @@ g_idKind g_setIdKind(g_generator g, g_idKind kind) {
 }
 
 /* Get name, or if no name is provided, return name of current parse-object */
-char* g_getName(g_generator g) {
+char* g_getName(
+    g_generator g)
+{
     char* result;
 
     result = NULL;
@@ -116,7 +131,9 @@ char* g_getName(g_generator g) {
 }
 
 /* Get name from generator name (strip path) */
-char* g_getProjectName(g_generator g) {
+char* g_getProjectName(
+    g_generator g)
+{
     char *package = g_getName(g);
     char *ptr = &package[strlen(package) - 1];
     while ((ptr != package)) {
@@ -133,7 +150,9 @@ char* g_getProjectName(g_generator g) {
     return ptr;
 }
 
-corto_object g_getCurrent(g_generator g) {
+corto_object g_getCurrent(
+    g_generator g)
+{
     corto_object result = NULL;
 
     if (g->current) {
@@ -143,7 +162,9 @@ corto_object g_getCurrent(g_generator g) {
     return result;
 }
 
-corto_package g_getPackage(g_generator g) {
+corto_package g_getPackage(
+    g_generator g)
+{
     corto_object result = g->package;
 
     if (!result) {
@@ -154,7 +175,12 @@ corto_package g_getPackage(g_generator g) {
 }
 
 /* Add to-parse object */
-void g_parse(g_generator g, corto_object object, corto_bool parseSelf, corto_bool parseScope) {
+void g_parse(
+    g_generator g,
+    corto_object object,
+    bool parseSelf,
+    bool parseScope)
+{
     g_object* o = NULL;
     corto_iter objectIter;
 
@@ -189,7 +215,11 @@ void g_parse(g_generator g, corto_object object, corto_bool parseSelf, corto_boo
     }
 }
 
-static int g_genAttributeFind(void *value, void *userData) {
+static
+int g_genAttributeFind(
+    void *value,
+    void *userData)
+{
     g_attribute *attr = value;
     if(!strcmp(attr->key, *(char**)userData)) {
         *(void**)userData = attr;
@@ -199,7 +229,11 @@ static int g_genAttributeFind(void *value, void *userData) {
 }
 
 /* Set attribute */
-void g_setAttribute(g_generator g, char* key, char* value) {
+void g_setAttribute(
+    g_generator g,
+    char* key,
+    char* value)
+{
     g_attribute* attr = NULL;
 
     if (!g->attributes) {
@@ -222,7 +256,10 @@ void g_setAttribute(g_generator g, char* key, char* value) {
 }
 
 /* Get attribute */
-char* g_getAttribute(g_generator g, char* key) {
+char* g_getAttribute(
+    g_generator g,
+    char* key)
+{
     char* result = NULL;
 
     if(g->attributes) {
@@ -240,7 +277,10 @@ char* g_getAttribute(g_generator g, char* key) {
 }
 
 /* Load generator actions from library */
-corto_int16 g_load(g_generator g, char* library) {
+int16_t g_load(
+    g_generator g,
+    char* library)
+{
 
     /* Reset generator to initial state in case this is not the first library
      * that is processed. */
@@ -274,7 +314,11 @@ error:
     return -1;
 }
 
-static int g_freeObjects(void* _o, void* ctx) {
+static
+int g_freeObjects(
+    void* _o,
+    void* ctx)
+{
     g_object* o;
 
     CORTO_UNUSED(ctx);
@@ -287,7 +331,11 @@ static int g_freeObjects(void* _o, void* ctx) {
 }
 
 /* Free snippet */
-static int g_freeSnippet(void* o, void* ctx) {
+static
+int g_freeSnippet(
+    void* o,
+    void* ctx)
+{
     g_fileSnippet* snippet;
     g_file file;
 
@@ -298,7 +346,9 @@ static int g_freeSnippet(void* o, void* ctx) {
         g_fileWrite(file, "%s(%s)", snippet->option, snippet->id);
         g_fileWrite(file, "%s", snippet->src);
         g_fileWrite(file, "$end\n");
-        corto_warning("%s: code-snippet '%s' is not used, manually merge or remove from file.", file->name, snippet->id);
+        corto_warning(
+    "%s: code-snippet '%s' is not used, manually merge or remove from file.",
+            file->name, snippet->id);
     }
 
     if (snippet->id) {
@@ -313,7 +363,11 @@ static int g_freeSnippet(void* o, void* ctx) {
     return 1;
 }
 
-static int g_freeAttribute(void* _o, void* ctx) {
+static
+int g_freeAttribute(
+    void* _o,
+    void* ctx)
+{
     g_attribute* o;
 
     CORTO_UNUSED(ctx);
@@ -331,7 +385,11 @@ static int g_freeAttribute(void* _o, void* ctx) {
     return 1;
 }
 
-static int g_freeImport(void* _o, void* ctx) {
+static
+int g_freeImport(
+    void* _o,
+    void* ctx)
+{
     CORTO_UNUSED(ctx);
 
     corto_release(_o);
@@ -340,7 +398,9 @@ static int g_freeImport(void* _o, void* ctx) {
 }
 
 /* Free generator */
-void g_free(g_generator g) {
+void g_free(
+    g_generator g)
+{
     g_reset(g);
 
     if (g->objects) {
@@ -376,14 +436,15 @@ void g_free(g_generator g) {
 }
 
 /* Start generator */
-corto_int16 g_start(g_generator g) {
-
+int16_t g_start(
+    g_generator g)
+{
     /* Resolve package from name */
     if (g->name) {
         g->package = corto_lookup(NULL, g->name);
     }
 
-    corto_int16 ret = g->start_action(g);
+    int16_t ret = g->start_action(g);
     if (ret)  {
         corto_throw("generator failed");
     }
@@ -395,14 +456,17 @@ corto_int16 g_start(g_generator g) {
 
 /* Test if object must be parsed */
 static
-int g_checkParseWalk(void* o, void* userData) {
+int g_checkParseWalk(
+    void* o,
+    void* userData)
+{
     g_object* _o;
     int result;
 
     _o = o;
     result = 1;
 
-    /* If parseSelf, and object equals generatorObject, object must be parsed. */
+    /* If parseSelf and object equals generatorObject, object must be parsed. */
     if (_o->parseSelf && (_o->o == userData)) {
         result = 0;
 
@@ -421,7 +485,10 @@ int g_checkParseWalk(void* o, void* userData) {
 }
 
 static
-bool g_isMarked(g_generator g, corto_object o) {
+bool g_isMarked(
+    g_generator g,
+    corto_object o)
+{
     corto_object marker = corto_sourceof(o);
     bool bootstrap = !strcmp(g_getAttribute(g, "bootstrap"), "true");
 
@@ -434,7 +501,10 @@ bool g_isMarked(g_generator g, corto_object o) {
      return bootstrap || (marker && !strcmp(corto_idof(marker), "pp_marker"));
 }
 
-bool g_mustParse(g_generator g, corto_object o) {
+bool g_mustParse(
+    g_generator g,
+    corto_object o)
+{
     bool result;
 
     result = true;
@@ -450,7 +520,10 @@ bool g_mustParse(g_generator g, corto_object o) {
     return result;
 }
 
-corto_int16 g_import(g_generator g, corto_object package) {
+int16_t g_import(
+    g_generator g,
+    corto_object package)
+{
     if (!g->imports) {
         g->imports = corto_ll_new();
     }
@@ -468,7 +541,12 @@ struct g_walkObjects_t {
     void* userData;
 };
 
-int g_scopeWalk(g_generator g, corto_object o, int (*action)(corto_object,void*), void *data) {
+int g_scopeWalk(
+    g_generator g,
+    corto_object o,
+    int (*action)(corto_object,void*),
+    void *data)
+{
     corto_objectseq scope = corto_scope_claim(o);
     corto_int32 i;
     for (i = 0; i < scope.length; i ++) {
@@ -486,7 +564,10 @@ int g_scopeWalk(g_generator g, corto_object o, int (*action)(corto_object,void*)
 }
 
 /* Recursively walk scopes */
-int g_walkObjects(void* o, void* userData) {
+int g_walkObjects(
+    void* o,
+    void* userData)
+{
     struct g_walkObjects_t* data;
 
     data = userData;
@@ -506,8 +587,8 @@ int g_walkIterObject(
     g_object *o,
     g_walkAction action,
     void* userData,
-    corto_bool scopeWalk,
-    corto_bool recursiveWalk)
+    bool scopeWalk,
+    bool recursiveWalk)
 {
     /* Parse object */
     if (o->parseSelf) {
@@ -542,11 +623,19 @@ stop:
 }
 
 /* Walk objects, choose between recursive scopewalk or only top-level objects */
-static int g_walk_ext(g_generator g, g_walkAction action, void* userData, corto_bool scopeWalk, corto_bool recursiveWalk) {
+static
+int g_walk_ext(
+    g_generator g,
+    g_walkAction action,
+    void* userData,
+    bool scopeWalk,
+    bool recursiveWalk)
+{
     if (g->inWalk) {
         /* If already in a walk, continue */
         g_object *o = g->current;
-        if (!g_walkIterObject(g, o, action, userData, scopeWalk, recursiveWalk)) {
+        if (!g_walkIterObject(g, o, action, userData, scopeWalk, recursiveWalk))
+        {
             g->current = o;
             goto stop;
         }
@@ -556,7 +645,9 @@ static int g_walk_ext(g_generator g, g_walkAction action, void* userData, corto_
         corto_iter iter = corto_ll_iter(g->objects);
         while(corto_iter_hasNext(&iter)) {
             g_object* o = corto_iter_next(&iter);
-            if (!g_walkIterObject(g, o, action, userData, scopeWalk, recursiveWalk)) {
+            if (!g_walkIterObject(
+                g, o, action, userData, scopeWalk, recursiveWalk))
+            {
                 g->inWalk = FALSE;
                 goto stop;
             }
@@ -570,17 +661,29 @@ stop:
 }
 
 /* Walk objects */
-int g_walk(g_generator g, g_walkAction action, void* userData) {
+int g_walk(
+    g_generator g,
+    g_walkAction action,
+    void* userData)
+{
     return g_walk_ext(g, action, userData, TRUE, FALSE);
 }
 
 /* Walk objects, never walk scopes, even if object is required to. */
-int g_walkNoScope(g_generator g, g_walkAction action, void* userData) {
+int g_walkNoScope(
+    g_generator g,
+    g_walkAction action,
+    void* userData)
+{
     return g_walk_ext(g, action, userData, FALSE, FALSE);
 }
 
 /* Walk objects recursively */
-int g_walkRecursive(g_generator g, g_walkAction action, void* userData) {
+int g_walkRecursive(
+    g_generator g,
+    g_walkAction action,
+    void* userData)
+{
     return g_walk_ext(g, action, userData, TRUE, TRUE);
 }
 
@@ -591,12 +694,19 @@ typedef struct g_walkAll_t {
 } g_walkAll_t;
 
 static
-int g_walkAll_action(corto_object o, void *userData) {
+int g_walkAll_action(
+    corto_object o,
+    void *userData)
+{
     g_walkAll_t *data = userData;
     return data->action(o, data->userData);
 }
 
-int g_walkAll(g_generator generator, g_walkAction action, void* userData) {
+int g_walkAll(
+    g_generator generator,
+    g_walkAction action,
+    void* userData)
+{
     g_walkAll_t walkData = {action, userData};
     return !corto_genDepWalk(
         generator,
@@ -605,18 +715,26 @@ int g_walkAll(g_generator generator, g_walkAction action, void* userData) {
         &walkData);
 }
 
-/* Instead of looking at function overload attribute, check if there are functions
+/* Instead of looking at overload attribute, check if there are functions
  * in the same scope that have the same name. The difference is that a method
  * may overload a method from a baseclass from a different scope. In that case
  * however, there is no danger of a name-clash in generated code, so a short
  * name can still be used. */
-static corto_bool g_isOverloaded(corto_function o) {
-    corto_bool result = FALSE;
+static
+bool g_isOverloaded(
+    corto_function o)
+{
+    bool result = FALSE;
     corto_int32 i, d = 0;
     corto_objectseq scope = corto_scope_claim(corto_parentof(o));
     for (i = 0; i < scope.length; i ++) {
-        if (corto_instanceof(corto_procedure_o, corto_typeof(scope.buffer[i]))) {
-            corto_assert(corto_overload(scope.buffer[i], corto_idof(o), &d) == 0, "overloading error discovered in generator");
+        if (corto_instanceof(corto_procedure_o, corto_typeof(scope.buffer[i])))
+        {
+            corto_assert(
+                corto_overload(
+                    scope.buffer[i],
+                    corto_idof(o), &d) == 0,
+                    "overloading error discovered in generator");
             if (d > 0 || d == CORTO_OVERLOAD_NOMATCH_OVERLOAD) {
                 result = TRUE;
                 break;
@@ -629,7 +747,7 @@ static corto_bool g_isOverloaded(corto_function o) {
 
 /* Object id transformations */
 static
-corto_char* g_oidTransform(
+char* g_oidTransform(
     g_generator g,
     corto_object o,
     corto_id _id,
@@ -642,7 +760,7 @@ corto_char* g_oidTransform(
      * for generators trivial. */
     if (corto_class_instanceof(corto_procedure_o, corto_typeof(o))) {
         if (!g_isOverloaded(o)) {
-            corto_char* ptr;
+            char* ptr;
             ptr = strchr(_id, '(');
             if (ptr) {
                 *ptr = '\0';
@@ -665,8 +783,6 @@ corto_char* g_oidTransform(
                 goto error;
             }
 
-            /* strcat is not the most efficient function here, but it is the easiest, and this
-             * part of the code is not performance-critical. */
             for(i=0; i<count; i++) {
                 corto_sig_paramType(tmp, i, buff, NULL);
                 if (i) {
@@ -679,17 +795,20 @@ corto_char* g_oidTransform(
     }
 
     /* Check if class-identifiers must be altered */
-    if (kind != CORTO_GENERATOR_ID_DEFAULT && kind != CORTO_GENERATOR_ID_SHORT) {
+    if (kind != CORTO_GENERATOR_ID_DEFAULT && kind != CORTO_GENERATOR_ID_SHORT)
+    {
         corto_object i = o;
-        corto_char* ptr;
+        char* ptr;
 
         ptr = _id + strlen(_id);
         while(i) {
             while((ptr > _id) && (*ptr != '/')) {
                 ptr--;
             }
-            if ((corto_class_instanceof(corto_interface_o, i) && corto_type(i)->reference) || (i == corto_type(corto_object_o))) {
-                corto_char *start = ptr;
+            if ((corto_class_instanceof(corto_interface_o, i) &&
+                corto_type(i)->reference) || (i == corto_type(corto_object_o)))
+            {
+                char *start = ptr;
                 if (kind == CORTO_GENERATOR_ID_CLASS_UPPER) {
                     *start = toupper(*start);
                 } else {
@@ -741,7 +860,9 @@ char* g_fullOidExt(
             corto_path(tmp, from, o, "/");
             sprintf(_id, "corto/%s", tmp);
         } else {
-            if (!corto_instanceof(corto_package_o, o) && kind == CORTO_GENERATOR_ID_SHORT) {
+            if (!corto_instanceof(corto_package_o, o) &&
+                kind == CORTO_GENERATOR_ID_SHORT)
+            {
                 corto_object parent = corto_parentof(g_getCurrent(g));
                 corto_id signatureName;
                 corto_sig_name(corto_idof(o), signatureName);
@@ -752,7 +873,7 @@ char* g_fullOidExt(
         }
         g_oidTransform(g, o, _id, kind);
     } else {
-        corto_uint32 count = 0;
+        uint32_t count = 0;
 
         if (!g->anonymousObjects) {
             g->anonymousObjects = corto_ll_new();
@@ -790,17 +911,29 @@ char* g_fullOidExt(
     return id;
 }
 
-/* Translate an object to a language-specific identifier with idKind provided. */
-char* g_fullOid(g_generator g, corto_object o, corto_id id) {
+/* Translate an object to a language-specific identifier */
+char* g_fullOid(
+    g_generator g,
+    corto_object o,
+    corto_id id)
+{
     return g_fullOidExt(g, o, id, g->idKind);
 }
 
-char* g_shortOid(g_generator g, corto_object o, corto_id id) {
+char* g_shortOid(
+    g_generator g,
+    corto_object o,
+    corto_id id)
+{
     return g_fullOidExt(g, o, id, CORTO_GENERATOR_ID_SHORT);
 }
 
 /* Translate an id to language representation */
-char* g_id(g_generator g, char* str, corto_id id) {
+char* g_id(
+    g_generator g,
+    char* str,
+    corto_id id)
+{
     char* result;
 
     if (g->id_action) {
@@ -813,7 +946,11 @@ char* g_id(g_generator g, char* str, corto_id id) {
 }
 
 /* Translate a class id to language representation */
-char* g_oid(g_generator g, corto_object o, corto_id id) {
+char* g_oid(
+    g_generator g,
+    corto_object o,
+    corto_id id)
+{
     char* result;
     corto_id cid;
 
@@ -834,7 +971,12 @@ char* g_oid(g_generator g, corto_object o, corto_id id) {
 /* ==== Generator file-utility class */
 
 /* Convert a filename to a filepath, depending on it's extension. */
-static char* g_filePath_intern(g_generator g, char* filename, char* buffer) {
+static
+char* g_filePath_intern(
+    g_generator g,
+    char* filename,
+    char* buffer)
+{
     char* result;
     corto_id path;
 
@@ -847,7 +989,7 @@ static char* g_filePath_intern(g_generator g, char* filename, char* buffer) {
             fext ++;
         }
 
-        /* Check whether there is an attribute with the file extension - determines where to put the file */
+        /* Attribute with file extension as key determines file location */
         if(fext) {
             ext = g_getAttribute(g, fext);
         }
@@ -872,7 +1014,7 @@ error:
 }
 
 /* Find existing parts in the code that must not be overwritten. */
-corto_int16 g_loadExisting(
+int16_t g_loadExisting(
     g_generator g,
     const char* name,
     char* option,
@@ -917,7 +1059,8 @@ corto_int16 g_loadExisting(
 
                     if (strlen(ptr) >= sizeof(corto_id)) {
                         corto_throw(
-                            "%s: identifier of code-snippet exceeds %d characters", sizeof(corto_id));
+                        "%s: identifier of code-snippet exceeds %d characters",
+                            sizeof(corto_id));
                         goto error;
                     }
 
@@ -938,7 +1081,8 @@ corto_int16 g_loadExisting(
                         }
 
                         if(strstr(src, "$begin")) {
-                            corto_throw("%s: code-snippet '%s(%s)' contains nested $begin (did you forget an $end?)",
+                            corto_throw(
+"%s: code-snippet '%s(%s)' contains nested $begin (did you forget an $end?)",
                                 name, option, identifier);
                             corto_dealloc(src);
                             goto error;
@@ -954,7 +1098,9 @@ corto_int16 g_loadExisting(
                         ptr = endptr + 1;
 
                     } else {
-                        corto_warning("generator: missing $end after $begin(%s)", identifier);
+                        corto_warning(
+                            "generator: missing $end after $begin(%s)",
+                            identifier);
                     }
                 } else {
                     corto_warning("generator: missing ')' after %s(", option);
@@ -1017,7 +1163,9 @@ g_file g_fileOpenIntern(
     corto_file_extension(name, ext);
 
     /* First, load existing implementation if file exists */
-    if (!strcmp(ext, "c") || !strcmp(ext, "cpp") || !strcmp(ext, "h") || !strcmp(ext, "hpp")) {
+    if (!strcmp(ext, "c") || !strcmp(ext, "cpp") || !strcmp(ext, "h") ||
+        !strcmp(ext, "hpp"))
+    {
         if (g_loadExisting(g, name, "$header", &result->headers)) {
             corto_dealloc(result);
             goto error;
@@ -1051,8 +1199,13 @@ error:
 }
 
 /* Get path for file */
-char* g_filePath(g_generator g, corto_id buffer, const char *name, ...) {
-    corto_char namebuffer[512];
+char* g_filePath(
+    g_generator g,
+    corto_id buffer,
+    const char *name,
+    ...)
+{
+    char namebuffer[512];
     va_list args;
     va_start(args, name);
     vsprintf(namebuffer, name, args);
@@ -1064,9 +1217,14 @@ char* g_filePath(g_generator g, corto_id buffer, const char *name, ...) {
 }
 
 /* Get path for hidden file */
-char* g_hiddenFilePath(g_generator g, corto_id buffer, const char *name, ...) {
+char* g_hiddenFilePath(
+    g_generator g,
+    corto_id buffer,
+    const char *name,
+    ...)
+{
     CORTO_UNUSED(g);
-    corto_char namebuffer[512];
+    char namebuffer[512];
     va_list args;
     va_start(args, name);
     vsprintf(namebuffer, name, args);
@@ -1082,9 +1240,13 @@ char* g_hiddenFilePath(g_generator g, corto_id buffer, const char *name, ...) {
 }
 
 /* Open file */
-g_file g_fileOpen(g_generator g, const char* name, ...) {
-    corto_char filepath[512];
-    corto_char namebuffer[512];
+g_file g_fileOpen(
+    g_generator g,
+    const char* name,
+    ...)
+{
+    char filepath[512];
+    char namebuffer[512];
     va_list args;
     va_start(args, name);
     vsprintf(namebuffer, name, args);
@@ -1093,9 +1255,13 @@ g_file g_fileOpen(g_generator g, const char* name, ...) {
 }
 
 /* Open hidden file for writing. */
-g_file g_hiddenFileOpen(g_generator g, const char* name, ...) {
-    corto_char filepath[512];
-    corto_char namebuffer[512];
+g_file g_hiddenFileOpen(
+    g_generator g,
+    const char* name,
+    ...)
+{
+    char filepath[512];
+    char namebuffer[512];
     va_list args;
     va_start(args, name);
     vsprintf(namebuffer, name, args);
@@ -1119,7 +1285,11 @@ error:
 }
 
 /* Lookup an existing code-snippet */
-char* g_fileLookupSnippetIntern(g_file file, const char* snippetId, corto_ll list) {
+char* g_fileLookupSnippetIntern(
+    g_file file,
+    const char* snippetId,
+    corto_ll list)
+{
     corto_iter iter;
     g_fileSnippet* snippet;
     CORTO_UNUSED(file);
@@ -1154,36 +1324,55 @@ char* g_fileLookupSnippetIntern(g_file file, const char* snippetId, corto_ll lis
     return snippet ? snippet->src : NULL;
 }
 
-char* g_fileLookupSnippet(g_file file, const char* snippetId) {
+char* g_fileLookupSnippet(
+    g_file file,
+    const char* snippetId)
+{
     return g_fileLookupSnippetIntern(file, snippetId, file->snippets);
 }
 
-char* g_fileLookupHeader(g_file file, const char* snippetId) {
+char* g_fileLookupHeader(
+    g_file file,
+    const char* snippetId)
+{
     return g_fileLookupSnippetIntern(file, snippetId, file->headers);
 }
 
 /* Increase indentation */
-void g_fileIndent(g_file file) {
+void g_fileIndent(
+    g_file file)
+{
     file->indent++;
 }
 
 /* Decrease indentation */
-void g_fileDedent(g_file file) {
+void g_fileDedent(
+    g_file file)
+{
     file->indent--;
 }
 
 /* Set scope of file */
-void g_fileScopeSet(g_file file, corto_object o) {
+void g_fileScopeSet(
+    g_file file,
+    corto_object o)
+{
     file->scope = o;
 }
 
 /* Get scope of file */
-corto_object g_fileScopeGet(g_file file) {
+corto_object g_fileScopeGet(
+    g_file file)
+{
     return file->scope;
 }
 
 /* Write to file */
-int g_fileWrite(g_file file, char* fmt, ...) {
+int g_fileWrite(
+    g_file file,
+    char* fmt,
+    ...)
+{
     va_list args;
 
     va_start(args, fmt);
@@ -1213,21 +1402,27 @@ error:
 }
 
 /* Get generator */
-g_generator g_fileGetGenerator(g_file file) {
+g_generator g_fileGetGenerator(
+    g_file file)
+{
     return file->generator;
 }
 
 
-/* Translate names of members so that they can be used in the same scope (for example when used as function parameter) */
+/* Translate names of members so that they can be used in the same scope */
 typedef struct corto_genWalkMember_t {
     corto_member member;
-    corto_uint32 occurred;
+    uint32_t occurred;
 }corto_genWalkMember_t;
 
-static corto_uint32 corto_genMemberCacheCount(corto_ll cache, corto_member m) {
+static
+uint32_t corto_genMemberCacheCount(
+    corto_ll cache,
+    corto_member m)
+{
     corto_iter memberIter;
     corto_genWalkMember_t *member;
-    corto_uint32 result = 0;
+    uint32_t result = 0;
 
     memberIter = corto_ll_iter(cache);
     while(corto_iter_hasNext(&memberIter)) {
@@ -1240,10 +1435,14 @@ static corto_uint32 corto_genMemberCacheCount(corto_ll cache, corto_member m) {
     return result;
 }
 
-static corto_uint32 corto_genMemberCacheGet(corto_ll cache, corto_member m) {
+static
+uint32_t corto_genMemberCacheGet(
+    corto_ll cache,
+    corto_member m)
+{
     corto_iter memberIter;
     corto_genWalkMember_t *member;
-    corto_uint32 result = 0;
+    uint32_t result = 0;
 
     memberIter = corto_ll_iter(cache);
     while(corto_iter_hasNext(&memberIter)) {
@@ -1257,7 +1456,12 @@ static corto_uint32 corto_genMemberCacheGet(corto_ll cache, corto_member m) {
     return result;
 }
 
-static corto_int16 corto_genMemberCache_member(corto_walk_opt* s, corto_value *info, void* userData) {
+static
+int16_t corto_genMemberCache_member(
+    corto_walk_opt* s,
+    corto_value *info,
+    void* userData)
+{
     corto_ll cache;
     CORTO_UNUSED(s);
 
@@ -1278,8 +1482,13 @@ static corto_int16 corto_genMemberCache_member(corto_walk_opt* s, corto_value *i
     return 0;
 }
 
-corto_char* corto_genMemberName(g_generator g, corto_ll cache, corto_member m, corto_char *result) {
-    corto_uint32 count;
+char* corto_genMemberName(
+    g_generator g,
+    corto_ll cache,
+    corto_member m,
+    char *result)
+{
+    uint32_t count;
     corto_id temp;
 
     if ((count = corto_genMemberCacheGet(cache, m))) {
@@ -1293,8 +1502,10 @@ corto_char* corto_genMemberName(g_generator g, corto_ll cache, corto_member m, c
     return result;
 }
 
-/* Build cache to determine whether membernames occur more than once (due to inheritance) */
-corto_ll corto_genMemberCacheBuild(corto_interface o) {
+/* Cache determines whether membernames overlap (due to inheritance) */
+corto_ll corto_genMemberCacheBuild(
+    corto_interface o)
+{
     corto_walk_opt s;
     corto_ll result;
 
@@ -1309,7 +1520,9 @@ corto_ll corto_genMemberCacheBuild(corto_interface o) {
     return result;
 }
 
-void corto_genMemberCacheClean(corto_ll cache) {
+void corto_genMemberCacheClean(
+    corto_ll cache)
+{
     corto_iter memberIter;
     corto_genWalkMember_t *member;
 
