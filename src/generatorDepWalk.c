@@ -21,7 +21,10 @@
 
 #include "corto/g/g.h"
 
-int corto_genDepBuildAction(corto_object o, void* userData);
+static
+int corto_genDepBuildAction(
+    corto_object o,
+    void* userData);
 
 /* Walk objects in correct dependency order. */
 typedef struct g_itemWalk_t *g_itemWalk_t;
@@ -42,7 +45,11 @@ struct g_depWalk_t  {
     corto_ll anonymousObjects;
 };
 
-corto_object corto_genDepFindAnonymous(g_depWalk_t data, corto_object o) {
+static
+corto_object corto_genDepFindAnonymous(
+    g_depWalk_t data,
+    corto_object o)
+{
     corto_object result = o;
 
     if (!corto_check_attr(o, CORTO_ATTR_NAMED) || !corto_childof(root_o, o)) {
@@ -68,7 +75,12 @@ corto_object corto_genDepFindAnonymous(g_depWalk_t data, corto_object o) {
 }
 
 /* Serialize dependencies on references */
-corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* userData) {
+static
+corto_int16 corto_genDepReference(
+    corto_walk_opt* s,
+    corto_value* info,
+    void* userData)
+{
     corto_object o = *(corto_object*)corto_value_ptrof(info);
     g_depWalk_t data = userData;
 
@@ -87,12 +99,15 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
         }
 
         /* Include dependencies on anonymous types */
-        if (!corto_check_attr(o, CORTO_ATTR_NAMED) || !corto_childof(root_o, o)) {
+        if (!corto_check_attr(o, CORTO_ATTR_NAMED) ||
+            !corto_childof(root_o, o))
+        {
             /* Look for equivalent anonymous objects. Since anonymous objects do
              * not have their own identity, they are equal if they have the same
              * value. Therefore, if multiple anonymous objects are found with
              * the same value, only insert it once in the dependency administration.
              */
+
             o = corto_genDepFindAnonymous(data, o);
             corto_genDepBuildAction(o, data->data);
         }
@@ -113,7 +128,8 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
 
                 if (corto_value_typeof(&out) != corto_type(corto_bool_o)) {
                     if (corto_value_cast(&out, corto_bool_o, &out)) {
-                        corto_throw("stateCondExpr '%s' of member '%s' is not castable to a boolean",
+                        corto_throw(
+            "stateCondExpr '%s' of member '%s' is not castable to a boolean",
                             m->stateCondExpr,
                             corto_fullpath(NULL, m));
                         goto error;
@@ -137,9 +153,11 @@ corto_int16 corto_genDepReference(corto_walk_opt* s, corto_value* info, void* us
                 }
             }
 
-            corto_depresolver_depend(data->data->resolver, data->o, CORTO_VALID, o, state);
+            corto_depresolver_depend(
+                data->data->resolver, data->o, CORTO_VALID, o, state);
         } else {
-            corto_depresolver_depend(data->data->resolver, data->o, CORTO_VALID, o, CORTO_VALID);
+            corto_depresolver_depend(
+                data->data->resolver, data->o, CORTO_VALID, o, CORTO_VALID);
         }
     }
 
@@ -162,7 +180,11 @@ corto_walk_opt corto_genDepSerializer(void) {
 }
 
 /* Add dependencies for function arguments */
-static int corto_genDepBuildProc(corto_function f, struct g_depWalk_t* data) {
+static
+int corto_genDepBuildProc(
+    corto_function f,
+    struct g_depWalk_t* data)
+{
     corto_uint32 i;
     corto_type t;
 
@@ -170,7 +192,14 @@ static int corto_genDepBuildProc(corto_function f, struct g_depWalk_t* data) {
         t = f->parameters.buffer[i].type;
         if (g_mustParse(data->data->g, t)) {
             t = corto_genDepFindAnonymous(data, t);
-            corto_depresolver_depend(data->data->resolver, f, CORTO_DECLARED, t, CORTO_DECLARED | CORTO_VALID); /* The type must be at least declared when the function is declared. */
+
+            /* Type must be at least declared when the function is declared. */
+            corto_depresolver_depend(
+                data->data->resolver,
+                f,
+                CORTO_DECLARED,
+                t,
+                CORTO_DECLARED | CORTO_VALID);
         }
     }
 
@@ -178,7 +207,11 @@ static int corto_genDepBuildProc(corto_function f, struct g_depWalk_t* data) {
 }
 
 /* Build dependency-administration for object */
-int corto_genDepBuildAction(corto_object o, void* userData) {
+static
+int corto_genDepBuildAction(
+    corto_object o,
+    void* userData)
+{
     g_itemWalk_t data;
     struct g_depWalk_t walkData;
     corto_walk_opt s;
@@ -194,25 +227,34 @@ int corto_genDepBuildAction(corto_object o, void* userData) {
     walkData.data = data;
     walkData.anonymousObjects = data->anonymousObjects;
 
-
-    /* Insert type-dependency: object can be declared only after it's type is defined. */
+    /* Object can be declared only after its type is defined. */
     if (g_mustParse(data->g, corto_typeof(o))) {
         corto_type t = corto_genDepFindAnonymous(&walkData, corto_typeof(o));
-        corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, t, CORTO_VALID);
+        corto_depresolver_depend(
+            data->resolver, o, CORTO_DECLARED, t, CORTO_VALID);
     }
 
     /* TODO: this is not nice */
     if (corto_class_instanceof(corto_procedure_o, corto_typeof(o))) {
-        /* Insert base-dependency: methods may only be declared after the base of a class has been defined. */
+        /* Insert base-dependency: methods may only be declared after the base
+         * of a class has been defined. */
         if (corto_typeof(o) != corto_type(corto_function_o)) {
-            if (corto_class_instanceof(corto_class_o, parent) && corto_interface(parent)->base) {
+            if (corto_class_instanceof(corto_class_o, parent) &&
+                corto_interface(parent)->base)
+            {
                 if (g_mustParse(data->g, corto_interface(parent)->base)) {
-                    corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, corto_interface(parent)->base, CORTO_VALID);
+                    corto_depresolver_depend(
+                        data->resolver,
+                        o,
+                        CORTO_DECLARED,
+                        corto_interface(parent)->base,
+                        CORTO_VALID);
                 }
             }
         }
 
-        /* Add dependencies on function parameters - types must be declared before function is declared. */
+        /* Add dependencies on function parameters - types must be declared
+         * before function is declared. */
         if (corto_genDepBuildProc(corto_function(o), &walkData)) {
             goto error;
         }
@@ -221,16 +263,20 @@ int corto_genDepBuildAction(corto_object o, void* userData) {
     /* Insert dependency on parent */
     if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_parentof(o)) {
         if (parent != root_o) { /* Root is always available */
-            corto_int8 parentState = corto_type(corto_typeof(o))->options.parentState;
+            corto_int8 parentState =
+                corto_type(corto_typeof(o))->options.parentState;
 
-            corto_depresolver_depend(data->resolver, o, CORTO_DECLARED, parent, parentState);
+            corto_depresolver_depend(
+                data->resolver, o, CORTO_DECLARED, parent, parentState);
             if (parentState == CORTO_DECLARED) {
-                corto_depresolver_depend(data->resolver, parent, CORTO_VALID, o, CORTO_VALID);
+                corto_depresolver_depend(
+                    data->resolver, parent, CORTO_VALID, o, CORTO_VALID);
             }
         }
     }
 
-    /* Guard to ensure that the object is added to the dependency administration */
+    /* Guard to ensure that the object is added to the dependency
+     * administration */
     corto_depresolver_insert(data->resolver, o);
 
     /* Insert dependencies on references in the object-value */
@@ -246,7 +292,11 @@ error:
 }
 
 
-static int corto_genDeclareAction(corto_object o, void* userData) {
+static
+int corto_genDeclareAction(
+    corto_object o,
+    void* userData)
+{
     g_itemWalk_t data;
     data = userData;
     if (data->onDeclare) {
@@ -256,7 +306,11 @@ static int corto_genDeclareAction(corto_object o, void* userData) {
     return 1;
 }
 
-static int corto_genDefineAction(corto_object o, void* userData) {
+static
+int corto_genDefineAction(
+    corto_object o,
+    void* userData)
+{
     g_itemWalk_t data;
     data = userData;
     if ((corto_typeof(o)->kind != CORTO_VOID) || (corto_typeof(o)->reference)) {
@@ -267,9 +321,15 @@ static int corto_genDefineAction(corto_object o, void* userData) {
     return 1;
 }
 
-int corto_genDepWalk(g_generator g, corto_depresolver_action onDeclare, corto_depresolver_action onDefine, void* userData) {
+int corto_genDepWalk(
+    g_generator g,
+    corto_depresolver_action onDeclare,
+    corto_depresolver_action onDefine,
+    void* userData)
+{
     struct g_itemWalk_t walkData;
-    corto_depresolver resolver = corto_depresolverCreate(corto_genDeclareAction, corto_genDefineAction, &walkData);
+    corto_depresolver resolver = corto_depresolverCreate(
+        corto_genDeclareAction, corto_genDefineAction, &walkData);
     bool bootstrap = !strcmp(g_getAttribute(g, "bootstrap"), "true");
 
     /* Prepare walkData */
