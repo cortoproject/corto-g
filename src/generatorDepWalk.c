@@ -115,6 +115,7 @@ corto_int16 corto_genDepReference(
         /* Add dependency on item */
         if (m) {
             corto_state state = m->state;
+            
             if (m->stateCondExpr) {
                 corto_value v = corto_value_object(o, NULL);
                 corto_value out;

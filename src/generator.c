@@ -535,6 +535,21 @@ int16_t g_import(
     return 0;
 }
 
+int16_t g_import_private(
+    g_generator g,
+    corto_object package)
+{
+    if (!g->private_imports) {
+        g->private_imports = corto_ll_new();
+    }
+    if (!corto_ll_hasObject(g->private_imports, package)) {
+        corto_ll_insert(g->private_imports, package);
+        corto_claim(package);
+    }
+
+    return 0;
+}
+
 struct g_walkObjects_t {
     g_generator g;
     g_walkAction action;
@@ -861,6 +876,7 @@ char* g_fullOidExt(
             sprintf(_id, "corto/%s", tmp);
         } else {
             if (!corto_instanceof(corto_package_o, o) &&
+                g_mustParse(g, o) &&
                 kind == CORTO_GENERATOR_ID_SHORT)
             {
                 corto_object parent = corto_parentof(g_getCurrent(g));
