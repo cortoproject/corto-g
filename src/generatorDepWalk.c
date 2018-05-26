@@ -92,7 +92,7 @@ corto_int16 corto_genDepReference(
         m = NULL;
 
         if (info->kind == CORTO_MEMBER) {
-            m = info->is.member.t;
+            m = info->is.member.member;
             if (!m->type->reference) {
                 m = NULL;
             }

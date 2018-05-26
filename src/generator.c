@@ -1485,7 +1485,7 @@ int16_t corto_genMemberCache_member(
 
     if (info->kind == CORTO_MEMBER) {
         corto_genWalkMember_t *parameter;
-        corto_member m = info->is.member.t;
+        corto_member m = info->is.member.member;
 
         parameter = corto_alloc(sizeof(corto_genWalkMember_t));
         parameter->member = m;
