@@ -120,7 +120,7 @@ corto_int16 corto_genDepReference(
                 corto_value v = corto_value_object(o, NULL);
                 corto_value out;
 
-                if (corto_value_memberExpr(&v, m->stateCondExpr, &out)) {
+                if (corto_value_field(&v, m->stateCondExpr, &out)) {
                     corto_throw("invalid stateCondExpr '%s' for member '%s'",
                         m->stateCondExpr,
                         corto_fullpath(NULL, m));
