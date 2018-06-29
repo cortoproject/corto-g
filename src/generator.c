@@ -564,6 +564,7 @@ int g_scopeWalk(
 {
     corto_objectseq scope = corto_scope_claim(o);
     corto_int32 i;
+
     for (i = 0; i < scope.length; i ++) {
         if (g_isMarked(g, scope.buffer[i])) {
             if (!action(scope.buffer[i], data)) {
@@ -799,7 +800,7 @@ char* g_oidTransform(
             }
 
             for(i=0; i<count; i++) {
-                corto_sig_paramType(tmp, i, buff, NULL);
+                corto_sig_param_type(tmp, i, buff, NULL);
                 if (i) {
                     strcat(_id, ",");
                 }

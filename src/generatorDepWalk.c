@@ -115,7 +115,7 @@ corto_int16 corto_genDepReference(
         /* Add dependency on item */
         if (m) {
             corto_state state = m->state;
-            
+
             if (m->stateCondExpr) {
                 corto_value v = corto_value_object(o, NULL);
                 corto_value out;
@@ -265,7 +265,7 @@ int corto_genDepBuildAction(
     if (corto_check_attr(o, CORTO_ATTR_NAMED) && corto_parentof(o)) {
         if (parent != root_o) { /* Root is always available */
             corto_int8 parentState =
-                corto_type(corto_typeof(o))->options.parentState;
+                corto_type(corto_typeof(o))->parent_state;
 
             corto_depresolver_depend(
                 data->resolver, o, CORTO_DECLARED, parent, parentState);

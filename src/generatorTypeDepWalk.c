@@ -218,7 +218,7 @@ static int corto_genTypeCollectionDependencies(corto_collection t, corto_bool al
     if (t->kind != CORTO_ARRAY) {
         allowDeclared = TRUE;
     }
-    return corto_genTypeParse(t->elementType, allowDeclared, recursion, data);
+    return corto_genTypeParse(t->element_type, allowDeclared, recursion, data);
 }
 
 /* Resolve map dependencies */
@@ -230,9 +230,9 @@ static int corto_genTypeMapDependencies(corto_map t, corto_bool allowDeclared, c
         goto error;
     }
 
-    /* Serialize keyType */
-    if (t->keyType) {
-        if (corto_genTypeParse(t->keyType, TRUE, recursion, data)) {
+    /* Serialize key_type */
+    if (t->key_type) {
+        if (corto_genTypeParse(t->key_type, TRUE, recursion, data)) {
             goto error;
         }
     }
@@ -246,8 +246,8 @@ error:
 static int corto_genTypeIteratorDependencies(corto_iterator t, corto_bool allowDeclared, corto_bool* recursion, corto_genTypeWalk_t* data) {
     CORTO_UNUSED(allowDeclared);
 
-    /* Serialize elementType */
-    if (corto_genTypeParse(t->elementType, TRUE, recursion, data)) {
+    /* Serialize element_type */
+    if (corto_genTypeParse(t->element_type, TRUE, recursion, data)) {
         goto error;
     }
 
@@ -331,13 +331,13 @@ error:
  *   introduce extra dependencies because they can only use the types that
  *   are defined, and do not introduce new types for themselves (thus also
  *   not introducing dependencies). The only exception is the usage of
- *   anonymous types, which can be 'declared' in argumentlists and returnTypes.
+ *   anonymous types, which can be 'declared' in argumentlists and return_types.
  *   This function will make sure that these anonymous types are also forwarded
  *   to the generator. */
 static int corto_genTypeProcedureDependencies(corto_function o, corto_genTypeWalk_t* data) {
     corto_uint32 i;
-    if (o->returnType && !corto_check_attr(o->returnType, CORTO_ATTR_NAMED)) {
-        if (corto_genTypeParse(o->returnType, TRUE, NULL, data)) {
+    if (o->return_type && !corto_check_attr(o->return_type, CORTO_ATTR_NAMED)) {
+        if (corto_genTypeParse(o->return_type, TRUE, NULL, data)) {
             goto error;
         }
     }
