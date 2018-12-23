@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-CORTO_EXPORT
+CORTO_G_EXPORT
 int corto_genDepWalk(
     g_generator g,
     corto_depresolver_action onDeclare,

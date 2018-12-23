@@ -19,12 +19,12 @@
  * THE SOFTWARE.
  */
 
-#include "corto/g/g.h"
+#include <corto.g>
 
 typedef struct corto_genTypeWalk_t {
     g_generator g;
-    corto_ll parsed; /* List of parsed types */
-    corto_ll declared; /* List of declared objects */
+    ut_ll parsed; /* List of parsed types */
+    ut_ll declared; /* List of declared objects */
     g_walkAction onDeclare;
     g_walkAction onDefine;
     g_walkAction onDeclareDefine;
@@ -35,7 +35,7 @@ static int corto_genTypeParse(corto_object o, corto_bool allowDeclared, corto_bo
 
 /* Mark type as parsed */
 static void corto_genTypeParsed(corto_object o, corto_genTypeWalk_t* data) {
-    corto_ll_insert(data->parsed, o);
+    ut_ll_insert(data->parsed, o);
 }
 
 /* Mark object as declared */
@@ -55,7 +55,7 @@ static corto_genTypeDeclaration* corto_genTypeDeclared(corto_object o, corto_gen
     decl->o = o;
     decl->printed = FALSE;
     decl->parsing = FALSE;
-    corto_ll_insert(data->declared, decl);
+    ut_ll_insert(data->declared, decl);
 
     return decl;
 }
@@ -66,16 +66,16 @@ static bool corto_isNamed(corto_object o) {
 
 /* Find type in parsed-list */
 static corto_bool corto_genTypeIsParsed(corto_object o, corto_genTypeWalk_t* data) {
-    corto_iter iter;
+    ut_iter iter;
     corto_object p;
     corto_bool found;
 
     p = NULL;
     found = FALSE;
 
-    iter = corto_ll_iter(data->parsed);
-    while(!found && corto_iter_hasNext(&iter)) {
-        p = corto_iter_next(&iter);
+    iter = ut_ll_iter(data->parsed);
+    while(!found && ut_iter_hasNext(&iter)) {
+        p = ut_iter_next(&iter);
         /* If object is scoped, it must be matched exactly */
         if (corto_isNamed(o)) {
             if (o == p) {
@@ -98,13 +98,13 @@ static corto_bool corto_genTypeIsParsed(corto_object o, corto_genTypeWalk_t* dat
 
 /* Find type in declared-list */
 static struct corto_genTypeDeclaration* corto_genTypeIsDeclared(corto_object o, corto_genTypeWalk_t* data) {
-    corto_iter iter;
+    ut_iter iter;
     struct corto_genTypeDeclaration* p;
 
     p = NULL;
-    iter = corto_ll_iter(data->declared);
-    while(corto_iter_hasNext(&iter)) {
-        p = corto_iter_next(&iter);
+    iter = ut_ll_iter(data->declared);
+    while(ut_iter_hasNext(&iter)) {
+        p = ut_iter_next(&iter);
         if (o == p->o) {
             break;
         }
@@ -316,7 +316,7 @@ static int corto_genTypeDependencies(corto_object o, corto_bool allowDeclared, c
         }
         break;
     default:
-        corto_throw("typeKind '%s' not handled by code-generator.", corto_idof(corto_enum_constant_from_value(corto_typeKind_o, corto_type(t)->kind)));
+        ut_throw("typeKind '%s' not handled by code-generator.", corto_idof(corto_enum_constant_from_value(corto_typeKind_o, corto_type(t)->kind)));
         goto error;
         break;
     }
@@ -370,7 +370,7 @@ int corto_genTypeParse(
 
     /* Check if object is valid */
     if (!corto_check_state(o, CORTO_VALID)) {
-        corto_throw("%s has undefined objects (%s)",
+        ut_throw("%s has undefined objects (%s)",
             corto_fullpath(NULL, g_getCurrent(data->g)),
             corto_fullpath(NULL, o));
         return 1;
@@ -389,7 +389,7 @@ int corto_genTypeParse(
     } else
     /* Check if object is defined - declared objects are allowed only for procedure objects. */
     if (corto_instanceof(corto_type_o, o) && !corto_check_state(o, CORTO_VALID)) {
-        corto_throw("%s has undefined objects (%s).",
+        ut_throw("%s has undefined objects (%s).",
             corto_fullpath(NULL, g_getCurrent(data->g)),
             corto_fullpath(NULL, o));
         return 1;
@@ -410,7 +410,7 @@ int corto_genTypeParse(
                         goto recursion;
                     } else {
                         /* If caller does not handle recursion, report error. */
-                        corto_throw("invalid recursion for type '%s'",
+                        ut_throw("invalid recursion for type '%s'",
                             corto_fullpath(NULL, o));
                         goto error;
                     }
@@ -491,7 +491,7 @@ int corto_genTypeParse(
                         *recursion = recurCheck;
                     } else {
                         /* Recursion has not been catched in time. */
-                        corto_throw("recursion not handled for type '%s'",
+                        ut_throw("recursion not handled for type '%s'",
                             corto_fullpath(NULL, o));
                         goto error;
                     }
@@ -524,8 +524,8 @@ int corto_genTypeDepWalk(
 
     /* Prepare walkdata, open headerfile */
     walkData.g = g;
-    walkData.parsed = corto_ll_new();
-    walkData.declared = corto_ll_new();
+    walkData.parsed = ut_ll_new();
+    walkData.declared = ut_ll_new();
     walkData.onDeclare = onDeclare;
     walkData.onDefine = onDefine;
     walkData.onDeclareDefine = onDeclareDefine;
@@ -537,12 +537,12 @@ int corto_genTypeDepWalk(
     }
 
     /* Free parsed-list */
-    corto_ll_free(walkData.parsed);
+    ut_ll_free(walkData.parsed);
 
-    while((decl = corto_ll_takeFirst(walkData.declared))) {
+    while((decl = ut_ll_takeFirst(walkData.declared))) {
         corto_dealloc(decl);
     }
-    corto_ll_free(walkData.declared);
+    ut_ll_free(walkData.declared);
 
     return 0;
 error:

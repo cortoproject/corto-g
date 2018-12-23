@@ -22,16 +22,16 @@
 #ifndef CORTO_G_H
 #define CORTO_G_H
 
-#include <corto/corto.h>
+#include "prebaked.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "corto/g/depresolver.h"
-#include "corto/g/generator.h"
-#include "corto/g/generatorDepWalk.h"
-#include "corto/g/generatorTypeDepWalk.h"
+#include "depresolver.h"
+#include "generator.h"
+#include "generatorDepWalk.h"
+#include "generatorTypeDepWalk.h"
 
 #ifdef __cplusplus
 }

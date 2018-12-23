@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-#include "corto/g/g.h"
+#include <corto.g>
 
 static
 int corto_genDepBuildAction(
@@ -35,14 +35,14 @@ struct g_itemWalk_t {
     corto_bool bootstrap;
     corto_depresolver_action onDeclare;
     corto_depresolver_action onDefine;
-    corto_ll anonymousObjects;
+    ut_ll anonymousObjects;
 };
 
 typedef struct g_depWalk_t* g_depWalk_t;
 struct g_depWalk_t  {
     corto_object o;
     g_itemWalk_t data;
-    corto_ll anonymousObjects;
+    ut_ll anonymousObjects;
 };
 
 static
@@ -54,12 +54,12 @@ corto_object corto_genDepFindAnonymous(
 
     if (!corto_check_attr(o, CORTO_ATTR_NAMED) || !corto_childof(root_o, o)) {
         if (!data->anonymousObjects) {
-            data->anonymousObjects = corto_ll_new();
+            data->anonymousObjects = ut_ll_new();
         }
 
-        corto_iter iter = corto_ll_iter(data->anonymousObjects);
-        while (corto_iter_hasNext(&iter)) {
-            corto_object a = corto_iter_next(&iter);
+        ut_iter iter = ut_ll_iter(data->anonymousObjects);
+        while (ut_iter_hasNext(&iter)) {
+            corto_object a = ut_iter_next(&iter);
             if (corto_compare(o, a) == CORTO_EQ) {
                 result = a;
                 break;
@@ -67,7 +67,7 @@ corto_object corto_genDepFindAnonymous(
         }
 
         if (o == result) {
-            corto_ll_append(data->anonymousObjects, o);
+            ut_ll_append(data->anonymousObjects, o);
         }
     }
 
@@ -121,7 +121,7 @@ corto_int16 corto_genDepReference(
                 corto_value out;
 
                 if (corto_value_field(&v, m->stateCondExpr, &out)) {
-                    corto_throw("invalid stateCondExpr '%s' for member '%s'",
+                    ut_throw("invalid stateCondExpr '%s' for member '%s'",
                         m->stateCondExpr,
                         corto_fullpath(NULL, m));
                     goto error;
@@ -129,7 +129,7 @@ corto_int16 corto_genDepReference(
 
                 if (corto_value_typeof(&out) != corto_type(corto_bool_o)) {
                     if (corto_value_cast(&out, corto_bool_o, &out)) {
-                        corto_throw(
+                        ut_throw(
             "stateCondExpr '%s' of member '%s' is not castable to a boolean",
                             m->stateCondExpr,
                             corto_fullpath(NULL, m));
@@ -345,7 +345,7 @@ int corto_genDepWalk(
     /* Build dependency administration */
     if (!bootstrap) {
         if (!g_walkRecursive(g, corto_genDepBuildAction, &walkData)) {
-            corto_trace("dependency-builder failed.");
+            ut_trace("dependency-builder failed.");
             goto error;
         }
     } else {
@@ -356,7 +356,7 @@ int corto_genDepWalk(
     }
 
     if (walkData.anonymousObjects) {
-        corto_ll_free(walkData.anonymousObjects);
+        ut_ll_free(walkData.anonymousObjects);
     }
 
     return corto_depresolver_walk(resolver);
