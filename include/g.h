@@ -22,7 +22,7 @@
 #ifndef CORTO_G_H
 #define CORTO_G_H
 
-#include "prebaked.h"
+#include "bake_config.h"
 
 #ifdef __cplusplus
 extern "C" {
