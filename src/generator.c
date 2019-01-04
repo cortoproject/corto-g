@@ -134,18 +134,11 @@ char* g_getName(
 char* g_getProjectName(
     g_generator g)
 {
-    char *package = g_getName(g);
-    char *ptr = &package[strlen(package) - 1];
-    while ((ptr != package)) {
-        ptr --;
-        if (*ptr == '/') {
-            ptr ++;
-            break;
-        }
-        if (*ptr == ':') {
-            ptr ++;
-            break;
-        }
+    char *ptr = strrchr(g_getName(g), '.');
+    if (!ptr) {
+        ptr = g_getName(g);
+    } else {
+        ptr ++;
     }
     return ptr;
 }
@@ -287,7 +280,7 @@ int16_t g_load(
     g_reset(g);
 
     /* Load library from generator path */
-    char* package = ut_asprintf("driver/gen/%s", library);
+    char* package = ut_asprintf("driver.gen.%s", library);
     const char* lib = ut_locate(package, &g->library, UT_LOCATE_LIB);
     if (!lib) {
         ut_throw("generator '%s' not found", package);
