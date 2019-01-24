@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-#include <corto/g/g.h>
+#include <corto.g>
 
 /* Close file */
 static
@@ -42,13 +42,13 @@ void g_reset(
     g_generator g)
 {
     if (g->library) {
-        corto_dl_close(g->library);
+        ut_dl_close(g->library);
         g->library = NULL;
     }
 
     if (g->files) {
-        corto_ll_walk(g->files, g_closeFile, NULL);
-        corto_ll_free(g->files);
+        ut_ll_walk(g->files, g_closeFile, NULL);
+        ut_ll_free(g->files);
         g->files = NULL;
     }
 
@@ -67,11 +67,11 @@ void g_reset(
     g->inWalk = FALSE;
 
     if (g->objects) {
-        corto_iter it = corto_ll_iter(g->objects);
-        while (corto_iter_hasNext(&it)) {
-            g_object *obj = corto_iter_next(&it);
+        ut_iter it = ut_ll_iter(g->objects);
+        while (ut_iter_hasNext(&it)) {
+            g_object *obj = ut_iter_next(&it);
             if (obj->parseSelf || obj->parseScope) {
-                g->current = corto_ll_get(g->objects, 0);
+                g->current = ut_ll_get(g->objects, 0);
                 break;
             }
         }
@@ -89,13 +89,13 @@ g_generator g_new(
 
     /* Set name */
     if (name) {
-        result->name = corto_strdup(name);
+        result->name = ut_strdup(name);
     }
 
     if (language) {
-        result->language = corto_strdup(language);
+        result->language = ut_strdup(language);
     } else {
-        result->language = corto_strdup("c"); /* Take 'c' as default language */
+        result->language = ut_strdup("c"); /* Take 'c' as default language */
     }
 
     g_reset(result);
@@ -134,18 +134,11 @@ char* g_getName(
 char* g_getProjectName(
     g_generator g)
 {
-    char *package = g_getName(g);
-    char *ptr = &package[strlen(package) - 1];
-    while ((ptr != package)) {
-        ptr --;
-        if (*ptr == '/') {
-            ptr ++;
-            break;
-        }
-        if (*ptr == ':') {
-            ptr ++;
-            break;
-        }
+    char *ptr = strrchr(g_getName(g), '.');
+    if (!ptr) {
+        ptr = g_getName(g);
+    } else {
+        ptr ++;
     }
     return ptr;
 }
@@ -182,14 +175,14 @@ void g_parse(
     bool parseScope)
 {
     g_object* o = NULL;
-    corto_iter objectIter;
+    ut_iter objectIter;
 
     /* First do a lookup, check if the object already exists */
     if (g->objects) {
         g_object *gObj;
-        objectIter = corto_ll_iter(g->objects);
-        while(corto_iter_hasNext(&objectIter)) {
-            gObj = corto_iter_next(&objectIter);
+        objectIter = ut_ll_iter(g->objects);
+        while(ut_iter_hasNext(&objectIter)) {
+            gObj = ut_iter_next(&objectIter);
             if (gObj->o == object) {
                 o = gObj;
                 break;
@@ -205,9 +198,9 @@ void g_parse(
         o->parseScope = parseScope;
 
         if (!g->objects) {
-            g->objects = corto_ll_new();
+            g->objects = ut_ll_new();
         }
-        corto_ll_append(g->objects, o);
+        ut_ll_append(g->objects, o);
 
         if ((parseSelf || parseScope) && !g->current) {
             g->current = o;
@@ -237,22 +230,22 @@ void g_setAttribute(
     g_attribute* attr = NULL;
 
     if (!g->attributes) {
-        g->attributes = corto_ll_new();
+        g->attributes = ut_ll_new();
     }else {
         void* userData = key;
-        if(!corto_ll_walk(g->attributes, g_genAttributeFind, &userData)) {
+        if(!ut_ll_walk(g->attributes, g_genAttributeFind, &userData)) {
             attr = userData;
         }
     }
 
     if(!attr) {
         attr = corto_alloc(sizeof(g_attribute));
-        attr->key = corto_strdup(key);
-        corto_ll_append(g->attributes, attr);
+        attr->key = ut_strdup(key);
+        ut_ll_append(g->attributes, attr);
     }else {
         corto_dealloc(attr->value);
     }
-    attr->value = corto_strdup(value);
+    attr->value = ut_strdup(value);
 }
 
 /* Get attribute */
@@ -264,7 +257,7 @@ char* g_getAttribute(
 
     if(g->attributes) {
         void *userData = key;
-        if(!corto_ll_walk(g->attributes, g_genAttributeFind, &userData)) {
+        if(!ut_ll_walk(g->attributes, g_genAttributeFind, &userData)) {
             result = ((g_attribute*)userData)->value;
         }
     }
@@ -287,22 +280,22 @@ int16_t g_load(
     g_reset(g);
 
     /* Load library from generator path */
-    char* package = corto_asprintf("driver/gen/%s", library);
-    const char* lib = corto_locate(package, &g->library, CORTO_LOCATE_LIB);
+    char* package = ut_asprintf("driver.gen.%s", library);
+    const char* lib = ut_locate(package, &g->library, UT_LOCATE_LIB);
     if (!lib) {
-        corto_throw("generator '%s' not found", package);
+        ut_throw("generator '%s' not found", package);
         goto error;
     }
 
-    corto_assert(g->library != NULL, "generator located but dl_out is NULL");
+    ut_assert(g->library != NULL, "generator located but dl_out is NULL");
 
     /* Load actions */
-    g->start_action = (g_startAction)corto_dl_proc(g->library, "genmain");
+    g->start_action = (g_startAction)ut_dl_proc(g->library, "genmain");
     if (!g->start_action) {
-        corto_throw("g_load: %s: unresolved SYMBOL 'genmain'", lib);
+        ut_throw("g_load: %s: unresolved SYMBOL 'genmain'", lib);
         goto error;
     }
-    g->id_action = (g_idAction)corto_dl_proc(g->library, "corto_genId");
+    g->id_action = (g_idAction)ut_dl_proc(g->library, "corto_genId");
 
     /* Function is allowed to be absent. */
 
@@ -346,7 +339,7 @@ int g_freeSnippet(
         g_fileWrite(file, "%s(%s)", snippet->option, snippet->id);
         g_fileWrite(file, "%s", snippet->src);
         g_fileWrite(file, "$end\n");
-        corto_warning(
+        ut_warning(
     "%s: code-snippet '%s' is not used, manually merge or remove from file.",
             file->name, snippet->id);
     }
@@ -404,25 +397,25 @@ void g_free(
     g_reset(g);
 
     if (g->objects) {
-        corto_ll_walk(g->objects, g_freeObjects, NULL);
-        corto_ll_free(g->objects);
+        ut_ll_walk(g->objects, g_freeObjects, NULL);
+        ut_ll_free(g->objects);
         g->objects = NULL;
     }
 
     if (g->attributes) {
-        corto_ll_walk(g->attributes, g_freeAttribute, NULL);
-        corto_ll_free(g->attributes);
+        ut_ll_walk(g->attributes, g_freeAttribute, NULL);
+        ut_ll_free(g->attributes);
         g->attributes = NULL;
     }
 
     if (g->imports) {
-        corto_ll_walk(g->imports, g_freeImport, NULL);
-        corto_ll_free(g->imports);
+        ut_ll_walk(g->imports, g_freeImport, NULL);
+        ut_ll_free(g->imports);
         g->imports = NULL;
     }
 
     if (g->anonymousObjects) {
-        corto_ll_free(g->anonymousObjects);
+        ut_ll_free(g->anonymousObjects);
     }
 
     if (g->name) {
@@ -446,7 +439,7 @@ int16_t g_start(
 
     int16_t ret = g->start_action(g);
     if (ret)  {
-        corto_throw("generator failed");
+        ut_throw("generator failed");
     }
 
     return ret;
@@ -525,10 +518,10 @@ int16_t g_import(
     corto_object package)
 {
     if (!g->imports) {
-        g->imports = corto_ll_new();
+        g->imports = ut_ll_new();
     }
-    if (!corto_ll_hasObject(g->imports, package)) {
-        corto_ll_insert(g->imports, package);
+    if (!ut_ll_hasObject(g->imports, package)) {
+        ut_ll_insert(g->imports, package);
         corto_claim(package);
     }
 
@@ -540,10 +533,10 @@ int16_t g_import_private(
     corto_object package)
 {
     if (!g->private_imports) {
-        g->private_imports = corto_ll_new();
+        g->private_imports = ut_ll_new();
     }
-    if (!corto_ll_hasObject(g->private_imports, package)) {
-        corto_ll_insert(g->private_imports, package);
+    if (!ut_ll_hasObject(g->private_imports, package)) {
+        ut_ll_insert(g->private_imports, package);
         corto_claim(package);
     }
 
@@ -658,9 +651,9 @@ int g_walk_ext(
         g->current = o;
     } else if (g->objects) {
         g->inWalk = TRUE;
-        corto_iter iter = corto_ll_iter(g->objects);
-        while(corto_iter_hasNext(&iter)) {
-            g_object* o = corto_iter_next(&iter);
+        ut_iter iter = ut_ll_iter(g->objects);
+        while(ut_iter_hasNext(&iter)) {
+            g_object* o = ut_iter_next(&iter);
             if (!g_walkIterObject(
                 g, o, action, userData, scopeWalk, recursiveWalk))
             {
@@ -746,7 +739,7 @@ bool g_isOverloaded(
     for (i = 0; i < scope.length; i ++) {
         if (corto_instanceof(corto_procedure_o, corto_typeof(scope.buffer[i])))
         {
-            corto_assert(
+            ut_assert(
                 corto_overload(
                     scope.buffer[i],
                     corto_idof(o), &d) == 0,
@@ -795,7 +788,7 @@ char* g_oidTransform(
 
             count = corto_sig_paramCount(tmp);
             if (count == -1) {
-                corto_throw("invalid signature '%s'", tmp);
+                ut_throw("invalid signature '%s'", tmp);
                 goto error;
             }
 
@@ -893,11 +886,11 @@ char* g_fullOidExt(
         uint32_t count = 0;
 
         if (!g->anonymousObjects) {
-            g->anonymousObjects = corto_ll_new();
+            g->anonymousObjects = ut_ll_new();
         }
-        corto_iter it = corto_ll_iter(g->anonymousObjects);
-        while (corto_iter_hasNext(&it)) {
-            corto_object e = corto_iter_next(&it);
+        ut_iter it = ut_ll_iter(g->anonymousObjects);
+        while (ut_iter_hasNext(&it)) {
+            corto_object e = ut_iter_next(&it);
             if (e == o) {
                 break;
             } else if (corto_compare(e, o) == CORTO_EQ) {
@@ -905,8 +898,8 @@ char* g_fullOidExt(
             }
             count ++;
         }
-        if (count == corto_ll_count(g->anonymousObjects)) {
-            corto_ll_append(g->anonymousObjects, o);
+        if (count == ut_ll_count(g->anonymousObjects)) {
+            ut_ll_append(g->anonymousObjects, o);
         }
 
         corto_object cur = g_getCurrent(g);
@@ -1019,8 +1012,8 @@ char* g_filePath_intern(
     }
 
     /* Ensure path exists */
-    if (corto_file_path(result, path)) {
-        if (corto_mkdir(path)) {
+    if (ut_file_path(result, path)) {
+        if (ut_mkdir(path)) {
             goto error;
         }
     }
@@ -1035,19 +1028,19 @@ int16_t g_loadExisting(
     g_generator g,
     const char* name,
     char* option,
-    corto_ll *list)
+    ut_ll *list)
 {
     char* code = NULL, *ptr = NULL;
     CORTO_UNUSED(g);
 
-    if (!corto_file_test(name)) {
+    if (!ut_file_test(name)) {
 
         /* Check if there is a .old file that can be restored */
         corto_id oldName;
         sprintf(oldName, "%s.old", name);
-        if (corto_file_test(oldName)) {
-            if (corto_rename(oldName, name)) {
-                corto_warning("could not rename '%s' to '%s'", oldName, name);
+        if (ut_file_test(oldName)) {
+            if (ut_rename(oldName, name)) {
+                ut_warning("could not rename '%s' to '%s'", oldName, name);
                 goto ok;
             }
         } else {
@@ -1055,7 +1048,7 @@ int16_t g_loadExisting(
         }
     }
 
-    code = corto_file_load(name);
+    code = ut_file_load(name);
     if (code) {
         ptr = code;
 
@@ -1075,7 +1068,7 @@ int16_t g_loadExisting(
                     *endptr = '\0';
 
                     if (strlen(ptr) >= sizeof(corto_id)) {
-                        corto_throw(
+                        ut_throw(
                         "%s: identifier of code-snippet exceeds %d characters",
                             sizeof(corto_id));
                         goto error;
@@ -1091,14 +1084,14 @@ int16_t g_loadExisting(
                         char* src;
 
                         *endptr = '\0';
-                        src = corto_strdup(ptr);
+                        src = ut_strdup(ptr);
 
                         if (!*list) {
-                            *list = corto_ll_new();
+                            *list = ut_ll_new();
                         }
 
                         if(strstr(src, "$begin")) {
-                            corto_throw(
+                            ut_throw(
 "%s: code-snippet '%s(%s)' contains nested $begin (did you forget an $end?)",
                                 name, option, identifier);
                             corto_dealloc(src);
@@ -1106,30 +1099,30 @@ int16_t g_loadExisting(
                         }
 
                         existing = corto_alloc(sizeof(g_fileSnippet));
-                        existing->option = corto_strdup(option);
-                        existing->id = corto_strdup(identifier);
+                        existing->option = ut_strdup(option);
+                        existing->id = ut_strdup(identifier);
                         existing->src = src;
                         existing->used = FALSE;
-                        corto_ll_insert(*list, existing);
+                        ut_ll_insert(*list, existing);
 
                         ptr = endptr + 1;
 
                     } else {
-                        corto_warning(
+                        ut_warning(
                             "generator: missing $end after $begin(%s)",
                             identifier);
                     }
                 } else {
-                    corto_warning("generator: missing ')' after %s(", option);
+                    ut_warning("generator: missing ')' after %s(", option);
                 }
             } else {
-                corto_warning("generator: missing '(' after %s.", option);
+                ut_warning("generator: missing '(' after %s.", option);
             }
         }
         corto_dealloc(code);
     } else {
         /* Catch error */
-        corto_catch();
+        ut_catch();
     }
 
 ok:
@@ -1143,16 +1136,16 @@ error:
 
 void g_fileClose(g_file file) {
     /* Remove file from generator administration */
-    corto_ll_remove(file->generator->files, file);
+    ut_ll_remove(file->generator->files, file);
 
     /* Free snippets */
     if (file->snippets) {
-        corto_ll_walk(file->snippets, g_freeSnippet, file);
-        corto_ll_free(file->snippets);
+        ut_ll_walk(file->snippets, g_freeSnippet, file);
+        ut_ll_free(file->snippets);
     }
     if (file->headers) {
-        corto_ll_walk(file->headers, g_freeSnippet, file);
-        corto_ll_free(file->headers);
+        ut_ll_walk(file->headers, g_freeSnippet, file);
+        ut_ll_free(file->headers);
     }
 
     fclose(file->file);
@@ -1174,10 +1167,10 @@ g_file g_fileOpenIntern(
     result->scope = NULL;
     result->file = NULL;
     result->indent = 0;
-    result->name = corto_strdup(name);
+    result->name = ut_strdup(name);
     result->generator = g;
 
-    corto_file_extension(name, ext);
+    ut_file_extension(name, ext);
 
     /* First, load existing implementation if file exists */
     if (!strcmp(ext, "c") || !strcmp(ext, "cpp") || !strcmp(ext, "h") ||
@@ -1199,19 +1192,19 @@ g_file g_fileOpenIntern(
 
     result->file = fopen(name, "w");
     if (!result->file) {
-        corto_throw("'%s': %s", name, strerror(errno));
+        ut_throw("'%s': %s", name, strerror(errno));
         corto_dealloc(result);
         goto error;
     }
 
     if (!g->files) {
-        g->files = corto_ll_new();
+        g->files = ut_ll_new();
     }
-    corto_ll_insert(g->files, result);
+    ut_ll_insert(g->files, result);
 
     return result;
 error:
-    corto_throw("failed to open file '%s'", name);
+    ut_throw("failed to open file '%s'", name);
     return NULL;
 }
 
@@ -1289,8 +1282,8 @@ g_file g_hiddenFileOpen(
         hidden = ".corto";
     }
 
-    if (corto_file_test(hidden) != 1) {
-        if (corto_mkdir(hidden)) {
+    if (ut_file_test(hidden) != 1) {
+        if (ut_mkdir(hidden)) {
             goto error;
         }
     }
@@ -1305,18 +1298,18 @@ error:
 char* g_fileLookupSnippetIntern(
     g_file file,
     const char* snippetId,
-    corto_ll list)
+    ut_ll list)
 {
-    corto_iter iter;
+    ut_iter iter;
     g_fileSnippet* snippet;
     CORTO_UNUSED(file);
 
     snippet = NULL;
 
     if (list) {
-        iter = corto_ll_iter(list);
-        while(corto_iter_hasNext(&iter)) {
-            snippet = corto_iter_next(&iter);
+        iter = ut_ll_iter(list);
+        while(ut_iter_hasNext(&iter)) {
+            snippet = ut_iter_next(&iter);
             corto_id path; strcpy(path, snippet->id);
             char *snippetPtr = path;
 
@@ -1393,18 +1386,18 @@ int g_fileWrite(
     va_list args;
 
     va_start(args, fmt);
-    char *buffer = corto_vasprintf(fmt, args);
+    char *buffer = ut_vasprintf(fmt, args);
     va_end(args);
 
     /* Write indentation & string */
     if (file->indent && file->endLine) {
         if (fprintf(file->file, "%*s%s", file->indent * 4, " ", buffer) < 0) {
-            corto_throw("g_fileWrite: writing to outputfile failed.");
+            ut_throw("g_fileWrite: writing to outputfile failed.");
             goto error;
         }
     } else {
         if (fprintf(file->file, "%s", buffer) < 0) {
-            corto_throw("g_fileWrite: writing to outputfile failed.");
+            ut_throw("g_fileWrite: writing to outputfile failed.");
             goto error;
         }
     }
@@ -1434,16 +1427,16 @@ typedef struct corto_genWalkMember_t {
 
 static
 uint32_t corto_genMemberCacheCount(
-    corto_ll cache,
+    ut_ll cache,
     corto_member m)
 {
-    corto_iter memberIter;
+    ut_iter memberIter;
     corto_genWalkMember_t *member;
     uint32_t result = 0;
 
-    memberIter = corto_ll_iter(cache);
-    while(corto_iter_hasNext(&memberIter)) {
-        member = corto_iter_next(&memberIter);
+    memberIter = ut_ll_iter(cache);
+    while(ut_iter_hasNext(&memberIter)) {
+        member = ut_iter_next(&memberIter);
         if (!strcmp(corto_idof(member->member), corto_idof(m))) {
             result++;
         }
@@ -1454,16 +1447,16 @@ uint32_t corto_genMemberCacheCount(
 
 static
 uint32_t corto_genMemberCacheGet(
-    corto_ll cache,
+    ut_ll cache,
     corto_member m)
 {
-    corto_iter memberIter;
+    ut_iter memberIter;
     corto_genWalkMember_t *member;
     uint32_t result = 0;
 
-    memberIter = corto_ll_iter(cache);
-    while(corto_iter_hasNext(&memberIter)) {
-        member = corto_iter_next(&memberIter);
+    memberIter = ut_ll_iter(cache);
+    while(ut_iter_hasNext(&memberIter)) {
+        member = ut_iter_next(&memberIter);
         if (member->member == m) {
             result = member->occurred;
             break;
@@ -1479,7 +1472,7 @@ int16_t corto_genMemberCache_member(
     corto_value *info,
     void* userData)
 {
-    corto_ll cache;
+    ut_ll cache;
     CORTO_UNUSED(s);
 
     cache = userData;
@@ -1491,7 +1484,7 @@ int16_t corto_genMemberCache_member(
         parameter = corto_alloc(sizeof(corto_genWalkMember_t));
         parameter->member = m;
         parameter->occurred = corto_genMemberCacheCount(cache, m);
-        corto_ll_append(cache, parameter);
+        ut_ll_append(cache, parameter);
     } else {
         corto_walk_members(s, info, userData);
     }
@@ -1501,7 +1494,7 @@ int16_t corto_genMemberCache_member(
 
 char* corto_genMemberName(
     g_generator g,
-    corto_ll cache,
+    ut_ll cache,
     corto_member m,
     char *result)
 {
@@ -1520,17 +1513,17 @@ char* corto_genMemberName(
 }
 
 /* Cache determines whether membernames overlap (due to inheritance) */
-corto_ll corto_genMemberCacheBuild(
+ut_ll corto_genMemberCacheBuild(
     corto_interface o)
 {
     corto_walk_opt s;
-    corto_ll result;
+    ut_ll result;
 
     corto_walk_init(&s);
     s.access = CORTO_LOCAL | CORTO_PRIVATE;
     s.accessKind = CORTO_NOT;
     s.metaprogram[CORTO_MEMBER] = corto_genMemberCache_member;
-    result = corto_ll_new();
+    result = ut_ll_new();
 
     corto_metawalk(&s, corto_type(o), result);
 
@@ -1538,15 +1531,15 @@ corto_ll corto_genMemberCacheBuild(
 }
 
 void corto_genMemberCacheClean(
-    corto_ll cache)
+    ut_ll cache)
 {
-    corto_iter memberIter;
+    ut_iter memberIter;
     corto_genWalkMember_t *member;
 
-    memberIter = corto_ll_iter(cache);
-    while(corto_iter_hasNext(&memberIter)) {
-        member = corto_iter_next(&memberIter);
+    memberIter = ut_ll_iter(cache);
+    while(ut_iter_hasNext(&memberIter)) {
+        member = ut_iter_next(&memberIter);
         corto_dealloc(member);
     }
-    corto_ll_free(cache);
+    ut_ll_free(cache);
 }
